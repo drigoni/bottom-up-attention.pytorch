@@ -33,8 +33,8 @@ def vg_eval(detpath,
     class_recs = {}
     npos = 0
     for item, imagename in zip(gt_roidb, image_index):
-        if eval_attributes:
-            bbox = item['boxes'][np.where(np.any(item['gt_attributes'].toarray() == classindex, axis=1))[0], :]
+        if eval_attributes: 
+            bbox = item['boxes'][np.where(np.any(item['gt_attributes'] == classindex, axis=1))[0], :]
         else:
             bbox = item['boxes'][np.where(item['gt_classes'] == classindex)[0], :]
         difficult = np.zeros((bbox.shape[0],)).astype(np.bool)
