@@ -91,7 +91,7 @@ class VGEvaluator(DatasetEvaluator):
         self.roidb, self.image_index = self.gt_roidb(self._coco_api)
 
     def _tasks_from_config(self, cfg):
-        """
+        """attribute_ids
         Returns:
             tuple[str]: tasks that can be evaluated under the given configuration.
         """
@@ -114,8 +114,10 @@ class VGEvaluator(DatasetEvaluator):
             for ind, item in enumerate(dataset.imgToAnns[img_index]):
                 bboxes[ind, :] = item['bbox']
                 gt_classes[ind] = item['category_id'] + 1 # NOTE
-                for j, attr in enumerate(item['attribute_ids']):
-                    gt_attributes[ind, j] = attr
+                attrs = item.get("attribute_ids", None)
+                if attrs:
+                    for j, attr in enumerate(item['attribute_ids']):
+                        gt_attributes[ind, j] = attr
             bboxes[:, 2] = bboxes[:, 2] + bboxes[:, 0]
             bboxes[:, 3] = bboxes[:, 3] + bboxes[:, 1]
             tmp_dict['boxes'] = bboxes

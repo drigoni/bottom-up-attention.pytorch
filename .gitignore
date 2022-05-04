@@ -12,6 +12,7 @@ bua/d2/modeling/__pycache__/
 build/
 
 pretrained/
+drigoni_pretrained/
 .idea/
 Dockerfile
 datasets/

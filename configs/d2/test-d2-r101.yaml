@@ -1,6 +1,6 @@
 _BASE_: "base-d2.yaml"
 MODEL:
-  WEIGHTS: "bua-d2-frcn-r101.pth"
+  WEIGHTS: "drigoni_pretrained/drigoni_bua-d2-frcn-r101.pth"
   BUA:
     ATTRIBUTE_ON: True
     EXTRACTOR:
