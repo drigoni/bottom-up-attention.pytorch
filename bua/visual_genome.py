@@ -143,11 +143,11 @@ def register_coco_instances_with_attributes(name, metadata, json_file, image_roo
 # ==== Predefined splits for visual genome images ===========
 _PREDEFINED_SPLITS_VG = {
     "visual_genome_train": ("visual_genome/images", 
-                            "visual_genome/annotations/visual_genome_train.json"),
+                            "cleaned_visual_genome/annotations/cleaned_visual_genome_train.json"),
     "visual_genome_val": ("visual_genome/images", 
-                          "visual_genome/annotations/visual_genome_val.json"),
+                          "cleaned_visual_genome/annotations/cleaned_visual_genome_val.json"),
     "visual_genome_test": ("visual_genome/images", 
-                           "visual_genome/annotations/visual_genome_test.json"),
+                           "cleaned_visual_genome/annotations/cleaned_visual_genome_test.json"),
 }
 
 def register_all_vg(root):

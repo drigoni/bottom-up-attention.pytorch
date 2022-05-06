@@ -23,7 +23,7 @@ def save_dataset(annotations_file, annotations):
     '''
     # save cleaned annotation file
     output_file_name = annotations_file.split('/')[-1]
-    output_folder = "datasets/new_visual_genome/annotations"
+    output_folder = "datasets/cleaned_visual_genome/annotations"
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     output_file = "{}/cleaned_{}".format(output_folder, output_file_name)
