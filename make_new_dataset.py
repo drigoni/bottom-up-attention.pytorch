@@ -56,6 +56,11 @@ def _update_dataset_info(annotations):
     annotations['info'] = info
 
 def create_mapping(labels_file):
+    '''
+    This function creates the mapping function from the old classes to the new ones.
+    :param labels_file: new classes.
+    :return: mapping function, index to labels name for new classes, index to labels name for old classes
+    '''
     # loading cleaned classes
     print("Loading cleaned Visual Genome classes: {} .".format(labels_file))
     with open(labels_file, 'r') as file:
@@ -88,6 +93,13 @@ def create_mapping(labels_file):
     return map_fn, cleaned_labels, old_labels     # all in [1, 1600]
 
 def _update_class_labels(annotations, map_fn, cleaned_labels, old_labels):
+    '''
+    This function creates the new classes and check if it is all ok.
+    :param annotations: the Visual Genome annotations.
+    :param map_fn: the mapping function from the old to the new classes.
+    :param cleaned_labels: the new cleaned classes.
+    :param old_labels: the old classes.
+    '''
     # first verify that the classes indexes are the same
     print('Checking indexes and classes.')
     annotations_classes = {ann['id']: ann['name'] for ann in annotations['categories']}     # [0, 1599]
@@ -133,6 +145,13 @@ def _update_class_labels(annotations, map_fn, cleaned_labels, old_labels):
 
 
 def _update_boxes_labels(annotations, map_fn, cleaned_labels, old_labels):
+    '''
+    This function updates the indexes of each bounding boxes according to the new classes.
+    :param annotations: the Visual Genome annotations.
+    :param map_fn: the mapping function from the old to the new classes.
+    :param cleaned_labels: the new cleaned classes.
+    :param old_labels: the old classes.
+    '''
     print('Updating indexing for each GT bounding box.')
     for image in annotations['annotations']:
         # print(image)
@@ -190,7 +209,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--labels', dest='labels',
                         help='File containing the new cleaned labels.',
-                        default="./datasets/new_classes_v2.txt",
+                        default="./evaluation/objects_vocab.txt",
                         type=str)
     args = parser.parse_args()
     return args
@@ -200,6 +219,6 @@ if __name__ == "__main__":
     args = parse_args()
     # create mapping function
     map_fn, cleaned_labels, old_labels = create_mapping(args.labels)
-    # create_new_dataset('datasets/visual_genome/annotations/visual_genome_train.json', map_fn, cleaned_labels, old_labels)
-    # create_new_dataset('datasets/visual_genome/annotations/visual_genome_val.json', map_fn, cleaned_labels, old_labels)
+    create_new_dataset('datasets/visual_genome/annotations/visual_genome_train.json', map_fn, cleaned_labels, old_labels)
+    create_new_dataset('datasets/visual_genome/annotations/visual_genome_val.json', map_fn, cleaned_labels, old_labels)
     create_new_dataset('datasets/visual_genome/annotations/visual_genome_test.json', map_fn, cleaned_labels, old_labels)
