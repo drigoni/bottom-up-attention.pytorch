@@ -96,10 +96,26 @@ def draw_plots_together(counting1, counting2, output):
     counting2_sorted = dict(sorted(counting2.items(), key=lambda i: i[1], reverse=True))
     x_axis2 = list(range(len(counting2_sorted)))
     plt.plot(x_axis2, [math.log(i) for i in counting2_sorted.values()])
-    plt.plot()
     plt.title("Boxes frequencies by category")
     ax = plt.gca()
     ax.set_xlabel('Category')        
+    ax.set_ylabel('log(Frequency)')
+    ax.legend(['Noisy categories', 'Cleaned categories'])
+    plt.savefig(output)  
+    print('Saved plot: {}'.format(output))
+
+def draw_loglog_plots_together(counting1, counting2, output):
+    # plot first dictionary
+    counting1_sorted = dict(sorted(counting1.items(), key=lambda i: i[1], reverse=True))
+    x_axis1 = list(range(len(counting1_sorted)))
+    plt.loglog(x_axis1, counting1_sorted.values(), base=2.718)
+    # plot second dictionary
+    counting2_sorted = dict(sorted(counting2.items(), key=lambda i: i[1], reverse=True))
+    x_axis2 = list(range(len(counting2_sorted)))
+    plt.loglog(x_axis2, counting2_sorted.values(), base=2.718)
+    plt.title("Boxes frequencies by category")
+    ax = plt.gca()
+    ax.set_xlabel('log(Category)')        
     ax.set_ylabel('log(Frequency)')
     ax.legend(['Noisy categories', 'Cleaned categories'])
     plt.savefig(output)  
@@ -122,13 +138,17 @@ def parse_args():
                         default="./datasets/visual_genome/annotations/visual_genome_train.json",
                         type=str)
     parser.add_argument('--file2', dest='file2',
-                    help='None or frequency file.',
-                    default=None,
-                    type=str)
+                        help='None or frequency file.',
+                        default=None,
+                        type=str)
     parser.add_argument('--output', dest='output',
-                    help='Dataset file.',
-                    default="./classes_frequency.pdf",
-                    type=str)
+                        help='Dataset file.',
+                        default="./classes_frequency.pdf",
+                        type=str)
+    parser.add_argument('--loglog', dest='loglog',
+                        help='True to plot log-log plot.',
+                        action='store_true')
+    parser.set_defaults(loglog=False)
     args = parser.parse_args()
     return args
 
@@ -148,4 +168,7 @@ if __name__ == "__main__":
         with open(args.file2, 'r') as f:
             counting2 = json.load(f)
         # plots together the frequencies reported in two files
-        draw_plots_together(counting1, counting2, args.output)
+        if args.loglog is False:
+            draw_plots_together(counting1, counting2, args.output)
+        else:
+            draw_loglog_plots_together(counting1, counting2, args.output)
