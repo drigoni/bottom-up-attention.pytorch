@@ -15,6 +15,8 @@ from itertools import chain, combinations
 import distutils
 import copy
 import json
+import math
+import matplotlib.pyplot as plt
 
 
 def load_dataset(annotations_file):
@@ -70,13 +72,12 @@ def draw_plot(counting, output):
     :param counting: the frequency for each class.
     :param output: the path of the output file.
     '''
-    import matplotlib.pyplot as plt
     counting_sorted = dict(sorted(counting.items(), key=lambda i: i[1], reverse=True))
     x_axis = list(range(len(counting_sorted)))
     plt.plot(x_axis, counting_sorted.values())
-    plt.title("Boxes frequencies by classes")
+    plt.title("Boxes frequencies by category")
     ax = plt.gca()
-    ax.set_xlabel('Classes')        
+    ax.set_xlabel('Category')        
     ax.set_ylabel('Frequency')
     plt.savefig(output)  
     print('Saved plot: {}'.format(output))
@@ -84,6 +85,25 @@ def draw_plot(counting, output):
     with open(text_output, 'w') as f:
         json.dump(counting_sorted, f, indent=2)
     print('Saved file: {}'.format(text_output))
+
+
+def draw_plots_together(counting1, counting2, output):
+    # plot first dictionary
+    counting1_sorted = dict(sorted(counting1.items(), key=lambda i: i[1], reverse=True))
+    x_axis1 = list(range(len(counting1_sorted)))
+    plt.plot(x_axis1, [math.log(i) for i in counting1_sorted.values()])
+    # plot second dictionary
+    counting2_sorted = dict(sorted(counting2.items(), key=lambda i: i[1], reverse=True))
+    x_axis2 = list(range(len(counting2_sorted)))
+    plt.plot(x_axis2, [math.log(i) for i in counting2_sorted.values()])
+    plt.plot()
+    plt.title("Boxes frequencies by category")
+    ax = plt.gca()
+    ax.set_xlabel('Category')        
+    ax.set_ylabel('log(Frequency)')
+    ax.legend(['Noisy categories', 'Cleaned categories'])
+    plt.savefig(output)  
+    print('Saved plot: {}'.format(output))
 
 
 def parse_args():
@@ -98,9 +118,13 @@ def parse_args():
                         default='{}/'.format(current_dir),
                         type=str)
     parser.add_argument('--file', dest='file',
-                        help='Dataset file.',
+                        help='Dataset file or frequency file.',
                         default="./datasets/visual_genome/annotations/visual_genome_train.json",
                         type=str)
+    parser.add_argument('--file2', dest='file2',
+                    help='None or frequency file.',
+                    default=None,
+                    type=str)
     parser.add_argument('--output', dest='output',
                     help='Dataset file.',
                     default="./classes_frequency.pdf",
@@ -111,8 +135,17 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    annotations = load_dataset(args.file)
-    categories = get_all_classes(annotations)
-    boxes = get_all_boxes(annotations)
-    counting = get_boxes_freq_by_class(boxes, categories)
-    draw_plot(counting, args.output)
+    if args.file2 is None:
+        # extract frequency just for one split of dataset
+        annotations = load_dataset(args.file)
+        categories = get_all_classes(annotations)
+        boxes = get_all_boxes(annotations)
+        counting = get_boxes_freq_by_class(boxes, categories)
+        draw_plot(counting, args.output)
+    else:
+        with open(args.file, 'r') as f:
+            counting1 = json.load(f)
+        with open(args.file2, 'r') as f:
+            counting2 = json.load(f)
+        # plots together the frequencies reported in two files
+        draw_plots_together(counting1, counting2, args.output)
