@@ -108,11 +108,11 @@ def draw_loglog_plots_together(counting1, counting2, output):
     # plot first dictionary
     counting1_sorted = dict(sorted(counting1.items(), key=lambda i: i[1], reverse=True))
     x_axis1 = list(range(len(counting1_sorted)))
-    plt.loglog(x_axis1, counting1_sorted.values(), base=2.718)
+    plt.loglog(x_axis1, counting1_sorted.values(), base=10)
     # plot second dictionary
     counting2_sorted = dict(sorted(counting2.items(), key=lambda i: i[1], reverse=True))
     x_axis2 = list(range(len(counting2_sorted)))
-    plt.loglog(x_axis2, counting2_sorted.values(), base=2.718)
+    plt.loglog(x_axis2, counting2_sorted.values(), base=10)
     plt.title("Boxes frequencies by category")
     ax = plt.gca()
     ax.set_xlabel('log(Category)')        
