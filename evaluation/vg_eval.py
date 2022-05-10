@@ -10,7 +10,6 @@ def vg_eval(detpath,
             gt_roidb,
             image_index,
             classindex,
-            categories_map,
             ovthresh=0.5,
             use_07_metric=False,
             eval_attributes=False):
@@ -34,7 +33,6 @@ def vg_eval(detpath,
     class_recs = {}
     npos = 0
     for item, imagename in zip(gt_roidb, image_index):
-        print(item['gt_classes'])
         if eval_attributes: 
             bbox = item['boxes'][np.where(np.any(item['gt_attributes'] == classindex, axis=1))[0], :]
         else:
