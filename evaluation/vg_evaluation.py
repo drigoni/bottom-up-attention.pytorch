@@ -73,6 +73,12 @@ class VGEvaluator(DatasetEvaluator):
                 self._classes.append(names[0])
                 for n in names:
                     self._class_to_ind[n] = count
+                    ## TODO drigoni: tmp
+                    #if n not in self._class_to_ind.keys():
+                    #    self._class_to_ind[n] = count
+                    #else:
+                    #    print("Error: class name already present:", n)
+                    #    exit(1)
                 count += 1
 
         # Load attributes
@@ -242,7 +248,7 @@ class VGEvaluator(DatasetEvaluator):
                 for pred_ind, item in enumerate(predictions):
                     scores = item["scores"]
                     labels = item["labels"] + 1     # due to __background__ class
-                    # drigoni: check
+                    # TODO drigoni: check
                     # for tmp_i in labels:
                     #     if tmp_i > 878:
                     #         print('Error: ', labels)
