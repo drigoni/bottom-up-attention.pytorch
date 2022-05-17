@@ -66,13 +66,19 @@ class VGEvaluator(DatasetEvaluator):
         self._classes = ['__background__']
         self._class_to_ind = {}
         self._class_to_ind[self._classes[0]] = 0
-        with open(os.path.join('evaluation/objects_vocab.txt')) as f:
+        with open(os.path.join('evaluation/cleaned_objects_vocab.txt')) as f:
             count = 1
             for object in f.readlines():
                 names = [n.lower().strip() for n in object.split(',')]
                 self._classes.append(names[0])
                 for n in names:
                     self._class_to_ind[n] = count
+                    ## TODO drigoni: tmp
+                    #if n not in self._class_to_ind.keys():
+                    #    self._class_to_ind[n] = count
+                    #else:
+                    #    print("Error: class name already present:", n)
+                    #    exit(1)
                 count += 1
 
         # Load attributes
@@ -88,7 +94,47 @@ class VGEvaluator(DatasetEvaluator):
                     self._attribute_to_ind[n] = count
                 count += 1
 
+        self.cat_map, self.cat_new_labels, self.cat_old_labels = self._get_categories_mapping()
         self.roidb, self.image_index = self.gt_roidb(self._coco_api)
+        assert len(self._classes)-1 == len(self.cat_new_labels) # self._classes has __background__ class
+
+
+    def _get_categories_mapping(self, labels_file='evaluation/cleaned_objects_vocab.txt'):
+        '''
+        This function creates the mapping function from the old classes to the new ones.
+        :param labels_file: new classes.
+        :return: mapping function, index to labels name for new classes, index to labels name for old classes
+        '''
+        # loading cleaned classes
+        print("Loading cleaned Visual Genome classes: {} .".format(labels_file))
+        with open(labels_file, 'r') as f:
+            cleaned_labels = f.readlines() # NOTE: removed __background__ class from file
+        # remove new line symbol and leading/trailing spaces.
+        cleaned_labels = [i.strip('\n').strip() for i in cleaned_labels]
+        # make dictionary
+        cleaned_labels = {id+1: label for id, label in enumerate(cleaned_labels)}     # [1, 1600]
+        # get previously labels from the same file and make the mapping function
+        map_fn = dict()
+        old_labels = dict()
+        for new_label_id, new_label_str in cleaned_labels.items():
+            new_label_id = int(new_label_id)
+            for piece in new_label_str.split(','):
+                tmp = piece.split(':')
+                assert len(tmp) == 2
+                old_label_id = int(tmp[0])
+                old_label_str = tmp[1]
+                # we need to avoid overriding of same ids like: 17:stop sign,17:stopsign
+                if old_label_id not in old_labels.keys():
+                    old_labels[old_label_id] = old_label_str
+                    map_fn[old_label_id] = new_label_id
+                else:
+                    print('Warning: label already present for {}:{}. Class {} ignored. '.format(old_label_id,
+                                                                                                old_labels[old_label_id],
+                                                                                                old_label_str))
+        assert len(old_labels) == 1600
+        assert len(old_labels) == len(map_fn)
+        # print(old_labels[1590], map_fn[1590], cleaned_labels[map_fn[1590]])
+        return map_fn, cleaned_labels, old_labels     # all in [1, 1600]
 
     def _tasks_from_config(self, cfg):
         """attribute_ids
@@ -113,7 +159,12 @@ class VGEvaluator(DatasetEvaluator):
             gt_classes = np.zeros((num_objs), dtype=np.int32)
             for ind, item in enumerate(dataset.imgToAnns[img_index]):
                 bboxes[ind, :] = item['bbox']
-                gt_classes[ind] = item['category_id'] + 1 # NOTE
+                old_Category = item['category_id'] # NOTE: [0: num_old_Classes-1]
+                # gt_classes[ind] = item['category_id'] + 1 # NOTE
+                gt_classes[ind] = self.cat_map[old_Category + 1]  # -1 not necessary because we need to add 1 according to original code
+                # drigoni: check
+                # print("GT classes: {}:{} || {}:{}".format(old_Category, self.cat_old_labels[old_Category + 1],
+                                                            # gt_classes[ind], self.cat_new_labels[gt_classes[ind] + 1] )) # TODO drigoni tmp
                 attrs = item.get("attribute_ids", None)
                 if attrs:
                     for j, attr in enumerate(item['attribute_ids']):
@@ -145,8 +196,16 @@ class VGEvaluator(DatasetEvaluator):
             if "instances" in output:
                 instances = output["instances"].to(self._cpu_device)
                 prediction["boxes"] = instances.pred_boxes.tensor.numpy()
-                prediction["labels"] = instances.pred_classes.numpy()
-                prediction["scores"] = instances.scores.numpy()
+                old_pred_classes = instances.pred_classes.numpy()
+                prediction["labels"] = np.array([self.cat_map[i + 1]-1 for i in old_pred_classes])
+
+                # drigoni: check
+                # for old, new in zip(old_pred_classes, prediction["labels"]):
+                    # print("Pred classes: {}:{} || {}:{}".format(old, self.cat_old_labels[old + 1],
+                                                                # new, self.cat_new_labels[new + 1] )) # TODO drigoni tmp
+
+                old_scores = instances.scores.numpy()
+                prediction["scores"] = old_scores
             self._predictions.append(prediction)
 
     def evaluate(self):
@@ -180,23 +239,6 @@ class VGEvaluator(DatasetEvaluator):
         self.do_python_eval(self._output_dir)
 
     def write_voc_results_file(self, predictions, output_dir):
-
-        # preds = []
-        # for item in predictions:
-        #     pred = {}
-        #     pred['image_id'] = item['image_id']
-        #     scores = item["scores"]
-        #     labels = item["labels"]
-        #     bbox = item["boxes"]
-        #     for ind, instance in enumerate(item['instances']):
-        #         scores[ind] = instance['score']
-        #         labels[ind] = instance['category_id']
-        #         bbox[ind, :] = instance['bbox'][:]
-        #     pred['scores'] = scores
-        #     pred['lables'] = labels
-        #     pred['bbox'] = bbox
-        #     preds.append(pred)
-
         for cls_ind, cls in enumerate(self._classes):
             if cls == '__background__':
                 continue
@@ -205,7 +247,12 @@ class VGEvaluator(DatasetEvaluator):
             with open(filename, 'wt') as f:
                 for pred_ind, item in enumerate(predictions):
                     scores = item["scores"]
-                    labels = item["labels"]+1
+                    labels = item["labels"] + 1     # due to __background__ class
+                    # TODO drigoni: check
+                    # for tmp_i in labels:
+                    #     if tmp_i > 878:
+                    #         print('Error: ', labels)
+                    #         exit(1)
                     bbox = item["boxes"]
                     if cls_ind not in labels:
                         continue
