@@ -3,7 +3,7 @@
 Created on 5/05/22
 Author: Davide Rigoni
 Emails: davide.rigoni.2@phd.unipd.it - drigoni@fbk.eu
-Description: This file includes the code needed for creating the new clean dataset.
+Description: This file includes the code for counting the classes instances.
 """
 import os
 import json
