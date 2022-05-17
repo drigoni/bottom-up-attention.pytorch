@@ -27,7 +27,6 @@ def draw_plots_together(counting1, counting2, output):
     counting2_sorted = dict(sorted(counting2.items(), key=lambda i: float(i[0]), reverse=False))
     plt.plot(counting2_sorted.keys(), counting2_sorted.values())
     plt.title("AP scores by number of GT boxes")
-    plt.xlim((min(counting2_sorted.keys()), max(counting2_sorted.keys())))
     ax = plt.gca()
     ax.set_xlabel('Number of GT boxes')        
     ax.set_ylabel('AP scores')
