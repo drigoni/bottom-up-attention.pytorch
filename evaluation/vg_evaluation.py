@@ -222,7 +222,7 @@ class VGEvaluator(DatasetEvaluator):
         path = os.path.join(output_dir, filename)
         return path
 
-    def do_python_eval(self, output_dir, pickle=True, eval_attributes = False):
+    def do_python_eval(self, output_dir, pickle=True, eval_attributes = False, by_npos = False):
         # We re-use parts of the pascal voc python code for visual genome
         aps = []
         nposs = []
@@ -272,11 +272,53 @@ class VGEvaluator(DatasetEvaluator):
             for i, cls in enumerate(classes[1:]):
                 f.write('{:s} {:.3f}\n'.format(cls, thresh[i]))
 
-        weights = np.array(nposs)
-        weights /= weights.sum()
-        print('Mean AP = {:.4f}'.format(np.mean(aps)))
-        print('Weighted Mean AP = {:.4f}'.format(np.average(aps, weights=weights)))
-        print('Mean Detection Threshold = {:.3f}'.format(avg_thresh))
+        if by_npos:
+            old_aps = copy.deepcopy(aps)
+            old_nposs = copy.deepcopy(nposs)
+            scores = []
+            wscores = []
+            points = [10, 30, 60, 100, 200, 300, 400, 600, 800, 1000, 2000, 3000]
+            for i in points:
+                print('-- Classes with at max {} gts. '.format(i))
+                aps = []
+                nposs = []
+                for ap, npos in zip(old_aps, old_nposs):
+                    if npos <= i:
+                        aps.append(ap)
+                        nposs.append(npos)
+                weights = np.array(nposs)
+                weights /= weights.sum()
+                print('Mean AP = {:.4f}'.format(np.mean(aps)))
+                print('Weighted Mean AP = {:.4f}'.format(np.average(aps, weights=weights)))
+                print('Mean Detection Threshold = {:.3f}'.format(avg_thresh))
+                scores.append(np.mean(aps))
+                wscores.append(np.average(aps, weights=weights))
+            # draw a plot
+            import matplotlib.pyplot as plt
+            plt.plot(points, scores)
+            plt.xlim((min(points), max(points)))
+            plt.title("AP scores by number of GT boxes")
+            ax = plt.gca()
+            ax.set_xlabel('Number of GT boxes')        
+            ax.set_ylabel('AP scores')
+            filename = 'AP_scores_by_GTs.pdf'
+            path = os.path.join(output_dir, filename)
+            plt.savefig(path)  
+            print('Saved plot: {}'.format(path))
+            # save a dump of the results
+            import json
+            filename = 'AP_scores_by_GTs.txt'
+            path = os.path.join(output_dir, filename)
+            results = {p: (s, ws) for p, s, ws in zip(points, scores, wscores)}
+            with open(path, 'w') as f:
+                json.dump(results, f, indent=2)
+            print('Saved file: {}'.format(path))
+        else:
+            weights = np.array(nposs)
+            weights /= weights.sum()
+            print('Mean AP = {:.4f}'.format(np.mean(aps)))
+            print('Weighted Mean AP = {:.4f}'.format(np.average(aps, weights=weights)))
+            print('Mean Detection Threshold = {:.3f}'.format(avg_thresh))
         # print('~~~~~~~~')
         # print('Results:')
         # for ap, npos in zip(aps, nposs):
