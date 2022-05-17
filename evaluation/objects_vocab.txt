@@ -1,4 +1,3 @@
-0:__background__
 1:yolk,525:egg,324:eggs
 2:goal
 3:bathroom,1574:restroom

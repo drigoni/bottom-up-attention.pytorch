@@ -64,7 +64,7 @@ def create_mapping(labels_file):
     # loading cleaned classes
     print("Loading cleaned Visual Genome classes: {} .".format(labels_file))
     with open(labels_file, 'r') as file:
-        cleaned_labels = file.readlines()[1:]   # remove '__background__' label
+        cleaned_labels = file.readlines()
     # remove new line symbol and leading/trailing spaces.
     cleaned_labels = [i.strip('\n').strip() for i in cleaned_labels]
     # make dictionary
