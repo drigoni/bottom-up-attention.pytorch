@@ -270,7 +270,7 @@ class VGEvaluator(DatasetEvaluator):
         path = os.path.join(output_dir, filename)
         return path
 
-    def do_python_eval(self, output_dir, pickle=True, eval_attributes = False, by_npos = True):
+    def do_python_eval(self, output_dir, pickle=True, eval_attributes = False, by_npos = False):
         # We re-use parts of the pascal voc python code for visual genome
         aps = []
         nposs = []
