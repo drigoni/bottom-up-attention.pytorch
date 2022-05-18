@@ -284,6 +284,7 @@ class VGEvaluator(DatasetEvaluator):
             classes = self._attributes
         else:
             classes = self._classes
+        print("Number of classes: {}. ".format(len(classes)))
         for i, cls in enumerate(classes):
             if cls == '__background__' or cls == '__no_attribute__':
                 continue
