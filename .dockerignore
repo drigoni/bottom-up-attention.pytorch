@@ -1,4 +1,6 @@
 ./datasets/*
 ./.idea/*
 ./output*
+./drigoni_pretrained/*
+./pretrained/*
 */__*\

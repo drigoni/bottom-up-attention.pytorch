@@ -1,3 +1,4 @@
+from email.policy import default
 import os, io
 import numpy as np
 
@@ -8,7 +9,7 @@ import pickle as cPickle
 import itertools
 import contextlib
 from pycocotools.coco import COCO
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from fvcore.common.file_io import PathManager
 
 import detectron2.utils.comm as comm
@@ -66,7 +67,7 @@ class VGEvaluator(DatasetEvaluator):
         self._classes = ['__background__']
         self._class_to_ind = {}
         self._class_to_ind[self._classes[0]] = 0
-        with open(os.path.join('evaluation/cleaned_objects_vocab.txt')) as f:
+        with open(os.path.join('evaluation/objects_vocab.txt')) as f:
             count = 1
             for object in f.readlines():
                 names = [n.lower().strip() for n in object.split(',')]
@@ -99,7 +100,7 @@ class VGEvaluator(DatasetEvaluator):
         assert len(self._classes)-1 == len(self.cat_new_labels) # self._classes has __background__ class
 
 
-    def _get_categories_mapping(self, labels_file='evaluation/cleaned_objects_vocab.txt'):
+    def _get_categories_mapping(self, labels_file='evaluation/objects_vocab.txt'):
         '''
         This function creates the mapping function from the old classes to the new ones.
         :param labels_file: new classes.
@@ -269,7 +270,7 @@ class VGEvaluator(DatasetEvaluator):
         path = os.path.join(output_dir, filename)
         return path
 
-    def do_python_eval(self, output_dir, pickle=True, eval_attributes = False, by_npos = False):
+    def do_python_eval(self, output_dir, pickle=True, eval_attributes = False, by_npos = True):
         # We re-use parts of the pascal voc python code for visual genome
         aps = []
         nposs = []
@@ -320,8 +321,21 @@ class VGEvaluator(DatasetEvaluator):
                 f.write('{:s} {:.3f}\n'.format(cls, thresh[i]))
 
         if by_npos:
+            import json
+            import matplotlib.pyplot as plt
             old_aps = copy.deepcopy(aps)
             old_nposs = copy.deepcopy(nposs)
+            # saving all scores
+            filename = 'all_AP_scores_by_GTs.txt'
+            path = os.path.join(output_dir, filename)
+            results = defaultdict(list)
+            for npos, ap in zip(old_nposs, old_aps):
+                results[npos].append(ap)
+            results = {key: sum(val_list)/max(len(val_list), 1) for key, val_list in results.items()}
+            with open(path, 'w') as f:
+                json.dump(results, f, indent=2)
+                print('Saved file: {}'.format(path))
+            # count cumulative AP
             scores = []
             wscores = []
             points = [10, 30, 60, 100, 200, 300, 400, 600, 800, 1000, 2000, 3000]
@@ -340,21 +354,8 @@ class VGEvaluator(DatasetEvaluator):
                 print('Mean Detection Threshold = {:.3f}'.format(avg_thresh))
                 scores.append(np.mean(aps))
                 wscores.append(np.average(aps, weights=weights))
-            # draw a plot
-            import matplotlib.pyplot as plt
-            plt.plot(points, scores)
-            plt.xlim((min(points), max(points)))
-            plt.title("AP scores by number of GT boxes")
-            ax = plt.gca()
-            ax.set_xlabel('Number of GT boxes')        
-            ax.set_ylabel('AP scores')
-            filename = 'AP_scores_by_GTs.pdf'
-            path = os.path.join(output_dir, filename)
-            plt.savefig(path)  
-            print('Saved plot: {}'.format(path))
             # save a dump of the results
-            import json
-            filename = 'AP_scores_by_GTs.txt'
+            filename = 'cumulative_AP_scores_by_GTs.txt'
             path = os.path.join(output_dir, filename)
             results = {p: (s, ws) for p, s, ws in zip(points, scores, wscores)}
             with open(path, 'w') as f:
