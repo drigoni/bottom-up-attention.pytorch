@@ -17,15 +17,30 @@ import copy
 import json
 import math
 import matplotlib.pyplot as plt
+import numpy as np
+
+def apply_data_transformation(data):
+    # load only AP scores, not wAP scores
+    data = {k: v[0] for k, v in data.items()}
+    data = {float(k): v for k, v in data.items()}
+    # filter data
+    data = {k: v for k, v in data.items() if k <= 3000}
+    # order data
+    data = dict(sorted(data.items(), key=lambda i: float(i[0]), reverse=False))
+    # calc cumulative results
+    # nposs, aps = list(data.keys()), list(data.values())
+    # cum_data = dict()
+    # for i in range(len(nposs)):
+    #     cum_data[nposs[i]] = np.mean(aps[:i+1])
+    # data = cum_data
+    return data
 
 
 def draw_plots_together(counting1, counting2, output):
     # plot first dictionary
-    counting1_sorted = dict(sorted(counting1.items(), key=lambda i: float(i[0]), reverse=False))
-    plt.plot(counting1_sorted.keys(), counting1_sorted.values())
+    plt.plot(counting1.keys(), counting1.values())
     # plot second dictionary
-    counting2_sorted = dict(sorted(counting2.items(), key=lambda i: float(i[0]), reverse=False))
-    plt.plot(counting2_sorted.keys(), counting2_sorted.values())
+    plt.plot(counting2.keys(), counting2.values())
     plt.title("AP scores by number of GT boxes")
     ax = plt.gca()
     ax.set_xlabel('Number of GT boxes')        
@@ -36,11 +51,9 @@ def draw_plots_together(counting1, counting2, output):
 
 def draw_loglog_plots_together(counting1, counting2, output):
     # plot first dictionary
-    counting1_sorted = dict(sorted(counting1.items(), key=lambda i: float(i[0]), reverse=False))
-    plt.loglog(counting1_sorted.keys(), counting1_sorted.values(), base=10)
+    plt.loglog(counting1.keys(), counting1.values(), base=10)
     # plot second dictionary
-    counting2_sorted = dict(sorted(counting2.items(), key=lambda i: float(i[0]), reverse=False))
-    plt.loglog(counting2_sorted.keys(), counting2_sorted.values(), base=10)
+    plt.loglog(counting2.keys(), counting2.values(), base=10)
     plt.title("AP scores by number of GT boxes")
     ax = plt.gca()
     ax.set_xlabel('log(Number of GT boxes)')        
@@ -82,12 +95,13 @@ if __name__ == "__main__":
     args = parse_args()
     with open(args.file1, 'r') as f:
         counting1 = json.load(f)
-        # load only AP scores, not wAP scores
-        counting1 = {k: v[0] for k, v in counting1.items()}
+
     with open(args.file2, 'r') as f:
         counting2 = json.load(f)
-        # load only AP scores, not wAP scores
-        counting2 = {k: v[0] for k, v in counting2.items()}
+    assert len(counting1) == len(counting2)
+
+    counting1 = apply_data_transformation(counting1)
+    counting2 = apply_data_transformation(counting2)
     # plots together the frequencies reported in two files
     if args.loglog is False:
         draw_plots_together(counting1, counting2, args.output)
