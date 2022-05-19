@@ -276,7 +276,7 @@ class VGEvaluator(DatasetEvaluator):
 
         print("Number of nposs: {}.".format(len(nposs)))
         print("Sum of nposs: {}.".format(sum(nposs)))
-        if True:
+        if by_npos:
             import json
             import matplotlib.pyplot as plt
             old_aps = copy.deepcopy(aps)
