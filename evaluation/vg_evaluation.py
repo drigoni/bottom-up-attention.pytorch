@@ -321,6 +321,7 @@ class VGEvaluator(DatasetEvaluator):
                 f.write('{:s} {:.3f}\n'.format(cls, thresh[i]))
 
         print("Number of nposs: {}.".format(len(nposs)))
+        print("Sum of nposs: {}.".format(sum(nposs)))
         if by_npos:
             import json
             import matplotlib.pyplot as plt
@@ -332,7 +333,9 @@ class VGEvaluator(DatasetEvaluator):
             results = defaultdict(list)
             for npos, ap in zip(old_nposs, old_aps):
                 results[npos].append(ap)
+            print("Number of results: {}.".format(len(results)))
             results = {key: sum(val_list)/max(len(val_list), 1) for key, val_list in results.items()}
+            print("Number of results after division: {}.".format(len(results)))
             with open(path, 'w') as f:
                 json.dump(results, f, indent=2)
                 print('Saved file: {}'.format(path))
