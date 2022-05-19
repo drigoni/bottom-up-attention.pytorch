@@ -59,54 +59,78 @@ def create_mapping(labels_file):
     return map_fn, cleaned_labels, old_labels     # all in [1, 1600]
 
 def apply_data_transformation(data, subset_cls):
-    # filter data
-    data = {k: v for k, v in data.items() if v[1] <= 3000}
+    data = {k: v[0] for k, v in data.items()}
+
+    # CHECK
+    assert len(data) == 878
+    assert len(data) >= len(subset_cls)
+    #for i in subset_cls:
+    #    if i not in data.keys():
+    #        print("error: ", i)
+
+    # FILTERING
+    print("Data points before filtering: {} .".format(len(data)))
     data = {k: v for k, v in data.items() if k in subset_cls}
-    # order data
-    data = dict(sorted(data.items(), key=lambda i: float(i[1][0]), reverse=False))
-    # calc cumulative results
-    #nposs, aps = list(data.keys()), list(data.values())
-    #cum_data = dict()
-    #for i in range(len(nposs)):
-    #    cum_data[nposs[i]] = np.mean(aps[:i+1]) # at maximum
-    #    # cum_data[nposs[i]] = np.mean(aps[i:]) # at minimum
-    #    # print('{}:{} .'.format(nposs[i], np.mean(aps[:i+1])))
-    #data = cum_data
-    #data = dict(sorted(data.items(), key=lambda i: float(i[0]), reverse=False))
-    # calc cumulative results by steps
-    #nposs, aps = list(data.keys()), list(data.values())
-    #cum_data = dict()
-    #for i in [10, 30, 60, 100, 200, 300, 400, 600, 1000, 2000, 3000]:
-    #    tmp = [p for n, p in zip(nposs, aps) if n <= i] # at maximum
-    #    # tmp = [p for n, p in zip(nposs, aps) if n >= i] # at minimum
-    #    cum_data[i] = np.mean(tmp) # at maximum
-    #data = cum_data
-    #data = dict(sorted(data.items(), key=lambda i: float(i[0]), reverse=False))
+    # data = {k: v for k, v in data.items() if k not in subset_cls}
+    # data = {k: v for k, v in data.items() if v[0] <= 400}
+    print("Data points after filtering: {} .".format(len(data)))
+
+    # GROUPING
+    tmp_data = defaultdict(list)
+    for k, v in data.items():
+        n = v[0]
+        ap = v[1]
+        tmp_data[n].append(ap)
+    data = {k: np.mean(v) for k, v in tmp_data.items()}
+
+    # CUMULATIVE RESULTS
+    data = dict(sorted(data.items(), key=lambda i: float(i[0]), reverse=False))
+    nposs, aps = list(data.keys()), list(data.values())
+    cum_data = dict()
+    for i in range(len(nposs)):
+        # cum_data[nposs[i]] = np.mean(aps[:i+1]) # at maximum
+        cum_data[nposs[i]] = np.mean(aps[i:]) # at minimum
+        # print('{}:{} .'.format(nposs[i], np.mean(aps[:i+1])))
+    data = cum_data
+    # 
+    # CUMULATIVE BY STEPS
+    # data = dict(sorted(data.items(), key=lambda i: float(i[0]), reverse=False))
+    # nposs, aps = list(data.keys()), list(data.values())
+    # cum_data = dict()
+    # for i in [10, 30, 60, 100, 200, 300, 400, 600, 1000, 2000, 3000]:
+    #     tmp = [p for n, p in zip(nposs, aps) if n <= i] # at maximum
+    #     # tmp = [p for n, p in zip(nposs, aps) if n >= i] # at minimum
+    #     cum_data[i] = np.mean(tmp) # at maximum
+    # data = cum_data
+
+    # ORDERING
+    data = dict(sorted(data.items(), key=lambda i: float(i[0]), reverse=False))
     return data
 
 def draw_plots_together(counting1, counting2, output):
     # plot first dictionary
-    plt.plot(counting1.keys(), counting1.values())
+    plt.plot(counting1.keys(), counting1.values(), linewidth=1, linestyle='-', label='post-processing')
     # plot second dictionary
-    plt.plot(counting2.keys(), counting2.values())
+    plt.plot(counting2.keys(), counting2.values(), linewidth=1, linestyle='-', label='cleaned classes')
     plt.title("AP scores by number of GT boxes")
+    plt.legend(loc="upper right")
     ax = plt.gca()
     ax.set_xlabel('Number of GT boxes')        
     ax.set_ylabel('AP scores')
-    ax.legend(['post-processing', 'Cleaned classes'])
+    # ax.legend(['post-processing', 'cleaned classes'])
     plt.savefig(output)  
     print('Saved plot: {}'.format(output))
 
 def draw_loglog_plots_together(counting1, counting2, output):
     # plot first dictionary
-    plt.loglog(counting1.keys(), counting1.values(), base=10)
+    plt.loglog(counting1.keys(), counting1.values(), linewidth=1, linestyle='-', label='post-processing')
     # plot second dictionary
-    plt.loglog(counting2.keys(), counting2.values(), base=10)
+    plt.loglog(counting2.keys(), counting2.values(), linewidth=1, linestyle='-', label='cleaned classes')
     plt.title("AP scores by number of GT boxes")
+    plt.legend(loc="upper right")
     ax = plt.gca()
     ax.set_xlabel('log(Number of GT boxes)')        
     ax.set_ylabel('log(AP scores)')
-    ax.legend(['post-processing', 'Cleaned classes'])
     plt.savefig(output)  
     print('Saved plot: {}'.format(output))
 
@@ -158,9 +182,14 @@ if __name__ == "__main__":
         map_fn_reverse[v].append(k)
     subset_indexes = [k for k, v in map_fn_reverse.items() if len(v) == 1]
     subset_cls = [cleaned_labels[idx] for idx in subset_indexes]
+    # cleaning according to evaluation of BU model
+    subset_cls = [(cls.split(',')[0]).lower().strip() for cls in subset_cls]
+    print("Number of untouched classes: {} .".format(len(subset_cls)))
 
     # transform data
+    print("Processing data points in: {} .".format(args.file1))
     counting1 = apply_data_transformation(counting1, subset_cls)
+    print("Processing data points in: {} .".format(args.file2))
     counting2 = apply_data_transformation(counting2, subset_cls)
 
     # plots together the frequencies reported in two files
