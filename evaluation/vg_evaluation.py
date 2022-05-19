@@ -320,6 +320,7 @@ class VGEvaluator(DatasetEvaluator):
             for i, cls in enumerate(classes[1:]):
                 f.write('{:s} {:.3f}\n'.format(cls, thresh[i]))
 
+        print("Number of nposs: {}.".format(len(nposs)))
         if by_npos:
             import json
             import matplotlib.pyplot as plt
