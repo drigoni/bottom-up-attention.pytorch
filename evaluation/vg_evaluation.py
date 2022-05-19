@@ -17,6 +17,9 @@ from detectron2.evaluation.evaluator import DatasetEvaluator
 from detectron2.data.datasets.coco import convert_to_coco_json
 from detectron2.evaluation.coco_evaluation import instances_to_coco_json
 
+import json
+import matplotlib.pyplot as plt
+
 from .vg_eval import vg_eval
 
 class VGEvaluator(DatasetEvaluator):
@@ -269,7 +272,7 @@ class VGEvaluator(DatasetEvaluator):
         path = os.path.join(output_dir, filename)
         return path
 
-    def do_python_eval(self, output_dir, pickle=True, eval_attributes = False, by_npos = False):
+    def do_python_eval(self, output_dir, pickle=True, eval_attributes = False):
         # We re-use parts of the pascal voc python code for visual genome
         aps = []
         nposs = []
@@ -284,7 +287,6 @@ class VGEvaluator(DatasetEvaluator):
             classes = self._attributes
         else:
             classes = self._classes
-        print("Number of classes: {}. ".format(len(classes)))
         for i, cls in enumerate(classes):
             if cls == '__background__' or cls == '__no_attribute__':
                 continue
@@ -320,57 +322,21 @@ class VGEvaluator(DatasetEvaluator):
             for i, cls in enumerate(classes[1:]):
                 f.write('{:s} {:.3f}\n'.format(cls, thresh[i]))
 
-        print("Number of nposs: {}.".format(len(nposs)))
-        print("Sum of nposs: {}.".format(sum(nposs)))
-        if by_npos:
-            import json
-            import matplotlib.pyplot as plt
-            old_aps = copy.deepcopy(aps)
-            old_nposs = copy.deepcopy(nposs)
-            # saving all scores
-            filename = 'all_AP_scores_by_GTs.txt'
-            path = os.path.join(output_dir, filename)
-            results = defaultdict(list)
-            for npos, ap in zip(old_nposs, old_aps):
-                results[npos].append(ap)
-            print("Number of results: {}.".format(len(results)))
-            results = {key: sum(val_list)/max(len(val_list), 1) for key, val_list in results.items()}
-            print("Number of results after division: {}.".format(len(results)))
-            with open(path, 'w') as f:
-                json.dump(results, f, indent=2)
-                print('Saved file: {}'.format(path))
-            # count cumulative AP
-            scores = []
-            wscores = []
-            points = [10, 30, 60, 100, 200, 300, 400, 600, 800, 1000, 2000, 3000]
-            for i in points:
-                print('-- Classes with at max {} gts. '.format(i))
-                aps = []
-                nposs = []
-                for ap, npos in zip(old_aps, old_nposs):
-                    if npos <= i:
-                        aps.append(ap)
-                        nposs.append(npos)
-                weights = np.array(nposs)
-                weights /= weights.sum()
-                print('Mean AP = {:.4f}'.format(np.mean(aps)))
-                print('Weighted Mean AP = {:.4f}'.format(np.average(aps, weights=weights)))
-                print('Mean Detection Threshold = {:.3f}'.format(avg_thresh))
-                scores.append(np.mean(aps))
-                wscores.append(np.average(aps, weights=weights))
-            # save a dump of the results
-            filename = 'cumulative_AP_scores_by_GTs.txt'
-            path = os.path.join(output_dir, filename)
-            results = {p: (s, ws) for p, s, ws in zip(points, scores, wscores)}
-            with open(path, 'w') as f:
-                json.dump(results, f, indent=2)
+        # saving all scores
+        filename = 'all_scores_by_category.json'
+        path = os.path.join(output_dir, filename)
+        results = defaultdict(list)
+        for cls, npos, ap in zip(classes, nposs, aps):
+            results[cls].append([npos, ap])
+        with open(path, 'w') as f:
+            json.dump(results, f, indent=2)
             print('Saved file: {}'.format(path))
-        else:
-            weights = np.array(nposs)
-            weights /= weights.sum()
-            print('Mean AP = {:.4f}'.format(np.mean(aps)))
-            print('Weighted Mean AP = {:.4f}'.format(np.average(aps, weights=weights)))
-            print('Mean Detection Threshold = {:.3f}'.format(avg_thresh))
+
+        weights = np.array(nposs)
+        weights /= weights.sum()
+        print('Mean AP = {:.4f}'.format(np.mean(aps)))
+        print('Weighted Mean AP = {:.4f}'.format(np.average(aps, weights=weights)))
+        print('Mean Detection Threshold = {:.3f}'.format(avg_thresh))
         # print('~~~~~~~~')
         # print('Results:')
         # for ap, npos in zip(aps, nposs):
