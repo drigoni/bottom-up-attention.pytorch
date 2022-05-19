@@ -280,7 +280,7 @@ class VGEvaluator(DatasetEvaluator):
         filename = 'all_scores_by_category.json'
         path = os.path.join(output_dir, filename)
         results = defaultdict(list)
-        for cls, npos, ap in zip(classes, nposs, aps):
+        for cls, npos, ap in zip(classes[1:], nposs, aps):
             results[cls].append([npos, ap])
         with open(path, 'w') as f:
             json.dump(results, f, indent=2)
