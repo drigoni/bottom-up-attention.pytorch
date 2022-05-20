@@ -71,7 +71,7 @@ def apply_data_transformation(data, subset_cls):
     # FILTERING
     print("Data points before filtering: {} .".format(len(data)))
     # data = {k: v for k, v in data.items() if k in subset_cls}
-    data = {k: v for k, v in data.items() if k not in subset_cls}
+    # data = {k: v for k, v in data.items() if k not in subset_cls}
     # data = {k: v for k, v in data.items() if v[0] <= 400}
     print("Data points after filtering: {} .".format(len(data)))
 
@@ -84,8 +84,8 @@ def apply_data_transformation(data, subset_cls):
     # data = {i: ap for i, ap in enumerate(tmp_aps)}
     cum_data = dict()
     for i in range(len(tmp_aps)):
-        # cum_data[i] = np.mean(tmp_aps[:i+1]) # at maximum
-        cum_data[i] = np.mean(tmp_aps[i:]) # at maximum
+        cum_data[i] = np.mean(tmp_aps[:i+1]) # at maximum
+        # cum_data[i] = np.mean(tmp_aps[i:]) # at minimum
     data = cum_data
 
 
@@ -96,7 +96,6 @@ def apply_data_transformation(data, subset_cls):
     #     ap = v[1]
     #     tmp_data[n].append(ap)
     # data = {k: np.mean(v) for k, v in tmp_data.items()}
-
     # # CUMULATIVE RESULTS
     # data = dict(sorted(data.items(), key=lambda i: float(i[0]), reverse=False))
     # nposs, aps = list(data.keys()), list(data.values())
@@ -106,7 +105,6 @@ def apply_data_transformation(data, subset_cls):
     #     # cum_data[nposs[i]] = np.mean(aps[i:]) # at minimum
     #     # print('{}:{} .'.format(nposs[i], np.mean(aps[:i+1])))
     # data = cum_data
-
     # CUMULATIVE BY STEPS
     # data = dict(sorted(data.items(), key=lambda i: float(i[0]), reverse=False))
     # nposs, aps = list(data.keys()), list(data.values())
@@ -123,13 +121,13 @@ def apply_data_transformation(data, subset_cls):
 
 def draw_plots_together(counting1, counting2, output):
     # plot first dictionary
-    plt.plot(counting1.keys(), counting1.values(), linewidth=1, linestyle='-', label='post-processing')
+    plt.plot(counting1.keys(), counting1.values(), linewidth=1, linestyle='-', label='BU post-processing')
     # plot second dictionary
-    plt.plot(counting2.keys(), counting2.values(), linewidth=1, linestyle='-', label='cleaned classes')
-    plt.title("AP scores by number of GT boxes")
+    plt.plot(counting2.keys(), counting2.values(), linewidth=1, linestyle='-', label='BU cleaned classes')
+    plt.title("AP scores")
     plt.legend(loc="upper right")
     ax = plt.gca()
-    ax.set_xlabel('Number of GT boxes')        
+    ax.set_xlabel('Classes ordered by frequency')        
     ax.set_ylabel('AP scores')
     # ax.legend(['post-processing', 'cleaned classes'])
     plt.savefig(output)  
@@ -140,11 +138,12 @@ def draw_loglog_plots_together(counting1, counting2, output):
     plt.loglog(counting1.keys(), counting1.values(), linewidth=1, linestyle='-', label='post-processing')
     # plot second dictionary
     plt.loglog(counting2.keys(), counting2.values(), linewidth=1, linestyle='-', label='cleaned classes')
-    plt.title("AP scores by number of GT boxes")
+    plt.title("AP scores")
     plt.legend(loc="upper right")
     ax = plt.gca()
-    ax.set_xlabel('log(Number of GT boxes)')        
+    ax.set_xlabel('log(Classes ordered by frequency)')        
     ax.set_ylabel('log(AP scores)')
+    # ax.legend(['post-processing', 'cleaned classes'])
     plt.savefig(output)  
     print('Saved plot: {}'.format(output))
 
