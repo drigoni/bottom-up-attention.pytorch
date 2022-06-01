@@ -8,7 +8,7 @@ import pickle as cPickle
 import itertools
 import contextlib
 from pycocotools.coco import COCO
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from fvcore.common.file_io import PathManager
 
 import detectron2.utils.comm as comm
@@ -16,6 +16,7 @@ from detectron2.data import MetadataCatalog
 from detectron2.evaluation.evaluator import DatasetEvaluator
 from detectron2.data.datasets.coco import convert_to_coco_json
 from detectron2.evaluation.coco_evaluation import instances_to_coco_json
+import json
 
 from .vg_eval import vg_eval
 
@@ -271,6 +272,16 @@ class VGEvaluator(DatasetEvaluator):
         with open(path, 'wt') as f:
             for i, cls in enumerate(classes[1:]):
                 f.write('{:s} {:.3f}\n'.format(cls, thresh[i]))
+
+        # saving all scores
+        filename = 'all_scores_by_category.json'
+        path = os.path.join(output_dir, filename)
+        results = defaultdict(list)
+        for cls, npos, ap in zip(classes[1:], nposs, aps):
+            results[cls].append([npos, ap])
+        with open(path, 'w') as f:
+            json.dump(results, f, indent=2)
+            print('Saved file: {}'.format(path))
 
         weights = np.array(nposs)
         weights /= weights.sum()
