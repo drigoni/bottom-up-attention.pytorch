@@ -91,11 +91,11 @@ def draw_plots_together(counting1, counting2, output):
     # plot first dictionary
     counting1_sorted = dict(sorted(counting1.items(), key=lambda i: i[1], reverse=True))
     x_axis1 = list(range(len(counting1_sorted)))
-    plt.plot(x_axis1, [math.log(i) for i in counting1_sorted.values()])
+    plt.plot(x_axis1, [math.log(i, 10) for i in counting1_sorted.values()])
     # plot second dictionary
     counting2_sorted = dict(sorted(counting2.items(), key=lambda i: i[1], reverse=True))
     x_axis2 = list(range(len(counting2_sorted)))
-    plt.plot(x_axis2, [math.log(i) for i in counting2_sorted.values()])
+    plt.plot(x_axis2, [math.log(i, 10) for i in counting2_sorted.values()])
     plt.title("Boxes frequencies by category")
     ax = plt.gca()
     ax.set_xlabel('Category')        
