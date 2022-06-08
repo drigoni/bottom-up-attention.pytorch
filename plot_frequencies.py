@@ -58,35 +58,31 @@ def create_mapping(labels_file):
     # print(old_labels[1590], map_fn[1590], cleaned_labels[map_fn[1590]])
     return map_fn, cleaned_labels, old_labels     # all in [1, 1600]
 
-def apply_data_transformation(data, subset_cls):
+def apply_data_transformation(data, old_cls, classes):
     data = {k: v[0] for k, v in data.items()}
 
     # CHECK
     assert len(data) == 878
-    assert len(data) >= len(subset_cls)
-    #for i in subset_cls:
+    assert len(data) >= len(old_cls)
+    #for i in old_cls:
     #    if i not in data.keys():
     #        print("error: ", i)
 
     # FILTERING
     print("Data points before filtering: {} .".format(len(data)))
-    # data = {k: v for k, v in data.items() if k in subset_cls}
-    # data = {k: v for k, v in data.items() if k not in subset_cls}
+    if str.lower(classes) == 'old':
+        data = {k: v for k, v in data.items() if k in old_cls}
+    elif str.lower(classes) == 'new':
+        data = {k: v for k, v in data.items() if k not in old_cls}
     # data = {k: v for k, v in data.items() if v[0] <= 400}
     print("Data points after filtering: {} .".format(len(data)))
 
     # CODE BY CLASS
     tmp = [(v[0], v[1]) for k, v in data.items()]
     tmp = list(sorted(tmp, key=lambda i: float(i[0]), reverse=False))
-    # tmp_npos = [v[0] for v in tmp]
     tmp_aps = [v[1] for v in tmp]
     print("Final scores: ", np.mean(tmp_aps))
-    # data = {i: ap for i, ap in enumerate(tmp_aps)}
-    # cum_data = dict()
-    # for i in range(len(tmp_aps)):
-        # cum_data[i] = np.mean(tmp_aps[:i+1]) # at maximum
-        # cum_data[i] = np.mean(tmp_aps[i:]) # at minimum
-    # data = cum_data
+
     # CUMULATIVE RESULTS
     cum_data = dict()
     for i in range(len(tmp_aps)):
@@ -125,30 +121,21 @@ def apply_data_transformation(data, subset_cls):
     data = dict(sorted(data.items(), key=lambda i: float(i[0]), reverse=False))
     return data
 
-def draw_plots_together(counting1, counting2, output):
+def draw_plots_together(counting1, counting2, output, classes):
     # plot first dictionary
     plt.plot(counting1.keys(), counting1.values(), linewidth=1, linestyle='-', label='BU post-processing')
     # plot second dictionary
     plt.plot(counting2.keys(), counting2.values(), linewidth=1, linestyle='-', label='BU cleaned classes')
-    plt.title("AP scores")
+    if str.lower(classes) == 'old':
+        plt.title('Old classes')
+    elif str.lower(classes) == 'new':
+        plt.title('New classes')
+    else:
+        plt.title('All classes')
     plt.legend(loc="upper right")
     ax = plt.gca()
     ax.set_xlabel('Classes ordered by frequency')        
-    ax.set_ylabel('AP scores')
-    # ax.legend(['post-processing', 'cleaned classes'])
-    plt.savefig(output)  
-    print('Saved plot: {}'.format(output))
-
-def draw_loglog_plots_together(counting1, counting2, output):
-    # plot first dictionary
-    plt.loglog(counting1.keys(), counting1.values(), linewidth=1, linestyle='-', label='post-processing')
-    # plot second dictionary
-    plt.loglog(counting2.keys(), counting2.values(), linewidth=1, linestyle='-', label='cleaned classes')
-    plt.title("AP scores")
-    plt.legend(loc="upper right")
-    ax = plt.gca()
-    ax.set_xlabel('log(Classes ordered by frequency)')        
-    ax.set_ylabel('log(AP scores)')
+    ax.set_ylabel('Cumulative AP')
     # ax.legend(['post-processing', 'cleaned classes'])
     plt.savefig(output)  
     print('Saved plot: {}'.format(output))
@@ -180,7 +167,10 @@ def parse_args():
                         help='Dataset file.',
                         default="./aps_scores.pdf",
                         type=str)
-    parser.set_defaults(loglog=False)
+    parser.add_argument('--classes', dest='classes',
+                help='Classes to consider. all, old, new.',
+                default='all',
+                type=str)
     args = parser.parse_args()
     return args
 
@@ -200,19 +190,16 @@ if __name__ == "__main__":
     for k, v in map_fn.items():
         map_fn_reverse[v].append(k)
     subset_indexes = [k for k, v in map_fn_reverse.items() if len(v) == 1]
-    subset_cls = [cleaned_labels[idx] for idx in subset_indexes]
+    old_cls = [cleaned_labels[idx] for idx in subset_indexes]
     # cleaning according to evaluation of BU model
-    subset_cls = [(cls.split(',')[0]).lower().strip() for cls in subset_cls]
-    print("Number of untouched classes: {} .".format(len(subset_cls)))
+    old_cls = [(cls.split(',')[0]).lower().strip() for cls in old_cls]
+    print("Number of untouched classes: {} .".format(len(old_cls)))
 
     # transform data
     print("Processing data points in: {} .".format(args.file1))
-    counting1 = apply_data_transformation(counting1, subset_cls)
+    counting1 = apply_data_transformation(counting1, old_cls, args.classes)
     print("Processing data points in: {} .".format(args.file2))
-    counting2 = apply_data_transformation(counting2, subset_cls)
+    counting2 = apply_data_transformation(counting2, old_cls, args.classes)
 
     # plots together the frequencies reported in two files
-    if args.loglog is False:
-        draw_plots_together(counting1, counting2, args.output)
-    else:
-        draw_loglog_plots_together(counting1, counting2, args.output)
+    draw_plots_together(counting1, counting2, args.output, args.classes)
