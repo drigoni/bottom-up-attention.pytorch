@@ -277,7 +277,7 @@ class VGEvaluator(DatasetEvaluator):
                 f.write('{:s} {:.3f}\n'.format(cls, thresh[i]))
 
         # saving all scores
-        filename = 'all_scores_by_category.json'
+        filename = 'all_ap_by_category.json'
         path = os.path.join(output_dir, filename)
         results = defaultdict(list)
         for cls, npos, ap in zip(classes[1:], nposs, aps):

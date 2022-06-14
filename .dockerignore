@@ -4,3 +4,4 @@
 ./drigoni_pretrained/*
 ./pretrained/*
 */__*\
+./extracted_features_*

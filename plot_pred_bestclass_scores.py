@@ -62,16 +62,18 @@ def create_mapping(labels_file):
 
 def select_information(data, inf_type):
     if inf_type == 'score':
-        return {k: np.mean(v) for k ,v in data.items()}
+        result =  {k: np.mean(v) for k ,v in data.items()}
     elif inf_type == 'freq':
-        return {k: len(v) for k ,v in data.items()}
+        result =  {k: len(v) for k ,v in data.items()}
     else:
         print("Type of information {} not correct.".format(inf_type))
         exit(1)
+    result = dict(sorted(result.items(), key=lambda i: i[0], reverse=False))
+    return result
 
 
 def extract_data(output, map_fn=None, old_cls=None, classes=None):
-    pred_by_classes = {cls_name: [] for cls_name in range(0, 879)}
+    pred_by_classes = {cls_name: [] for cls_name in range(0, 878)}
     for img_pred in output:
         image_id = img_pred['image_id']
         boxes = img_pred['boxes']
@@ -129,7 +131,7 @@ def draw_plots_together(data1, data2, output):
 def draw_plot(data, output, label, color):
     # plotting
     means = [np.nanmean(list(data.values()))]
-    print("Average {} over {} predicted classes".format(means[0], sum(~np.isnan(data.values()))))
+    print("Average {} over {} predicted classes".format(means[0], sum(~np.isnan(list(data.values())))))
     plt.bar(data.keys(), data.values(),  label=label, color=color)
     plt.hlines(means, 0, max(data.keys()), linewidth=1, linestyle='dashed', colors='black', label='Mean')
     # plot second dictionary
