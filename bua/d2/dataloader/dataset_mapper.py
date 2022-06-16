@@ -143,7 +143,8 @@ class AttributeDatasetMapper(DatasetMapper):
             )
 
         if not self.is_train:
-            dataset_dict.pop("annotations", None)
+            # drigoni: following line commented in order to use the mode in which the GT boxes are used in input as fixed proposals
+            # dataset_dict.pop("annotations", None) 
             dataset_dict.pop("sem_seg_file_name", None)
             return dataset_dict
 
