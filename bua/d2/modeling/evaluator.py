@@ -13,6 +13,7 @@ from detectron2.utils.comm import get_world_size, is_main_process
 from detectron2.utils.logger import log_every_n_seconds
 from detectron2.structures import Instances, BoxMode, Boxes
 from detectron2.modeling import detector_postprocess
+from detectron2.modeling.roi_heads.fast_rcnn import fast_rcnn_inference, fast_rcnn_inference_single_image
 
 
 class DatasetEvaluator:
@@ -103,7 +104,7 @@ class DatasetEvaluators(DatasetEvaluator):
         return results
 
 
-def inference_on_dataset(model, data_loader, evaluator: Union[DatasetEvaluator, List[DatasetEvaluator], None], GT_proposals=True):
+def inference_on_dataset(model, data_loader, evaluator: Union[DatasetEvaluator, List[DatasetEvaluator], None], GT_proposals=False):
     """
     Run model on the data_loader and evaluate the metrics with evaluator.
     Also benchmark the inference speed of `model.__call__` accurately.
@@ -161,6 +162,7 @@ def inference_on_dataset(model, data_loader, evaluator: Union[DatasetEvaluator, 
             images = model.preprocess_image(inputs)     # get the images data
             features = model.backbone(images.tensor)    # get the whole images features
             if GT_proposals:
+                # 1) generate the proposal boxes with the GT classes
                 all_images_size = [(i['height'], i['width']) for i in inputs]
                 # get all annotations in batch
                 all_annotations = [i['annotations'] for i in inputs]
@@ -174,21 +176,34 @@ def inference_on_dataset(model, data_loader, evaluator: Union[DatasetEvaluator, 
                     instance.proposal_boxes = img_boxes.to(model.device)
                     instance.objectness_logits = torch.tensor([10]*len(img_boxes)).to(model.device)
                     proposals.append(instance)
-                # proposals2, losses  = model.proposal_generator(images, features, None)
-                # print(proposals)
-                # print(proposals2)
-                # exit(1)
+                
+                # 2) extract features given the proposals.
+                # pooled_features -> torch.Size([134, 2048]
+                _, pooled_features, _ = model.roi_heads.get_roi_features(features, proposals)
+                # 3) extract per class logits and coordinates deltas
+                # tupla (scores, proposal_deltas). scores.shape -> torch.Size([n_proposals, 1601])
+                predictions = model.roi_heads.box_predictor(pooled_features)
+                # 4) pred final boxes.
+                # proposals coordinates without deltas are returned and we are using argmax. This implies n_proposals == final_boxes 
+                pred_instances, _ = box_predictor_inference(model.roi_heads.box_predictor, predictions, proposals)
             else:
+                # 1) generate the proposal with RPN
                 proposals, losses  = model.proposal_generator(images, features, None)   # get all the proposals boxes from RPN
-                # print(proposals, type(proposals))
-                # exit(1)
-            _, pooled_features, _ = model.roi_heads.get_roi_features(features, proposals)   # Extract features given the proposals. pooled_features -> torch.Size([134, 2048]
-            predictions = model.roi_heads.box_predictor(pooled_features)    # Extract logits and coordinates deltas. tupla (scores, proposal_deltas)
-            # print("predictions.scores", predictions[0], predictions[0].shape)  # --> torch.Size([n_proposals, 1601])
-            pred_instances, _ = model.roi_heads.box_predictor.inference(predictions, proposals)     # Apply sigmoid/softmax and applies deltas to proposals
-            pred_instances = model.roi_heads.forward_with_given_boxes(features, pred_instances)   # Add new keys. Useful for this task.
+                # 2) extract features given the proposals.
+                # pooled_features -> torch.Size([134, 2048]
+                _, pooled_features, _ = model.roi_heads.get_roi_features(features, proposals)
+                # 3) extract per class logits and coordinates deltas
+                # tupla (scores, proposal_deltas). scores.shape -> torch.Size([n_proposals, 1601])
+                predictions = model.roi_heads.box_predictor(pooled_features)
+                # 4) pred final boxes. Note: this function applies the sigmoid/softmax and the deltas on the proposals coordinates.
+                # Each box with high probability is returned. This implies n_proposals <= final_boxes 
+                pred_instances, _ = model.roi_heads.box_predictor.inference(predictions, proposals)     # Apply sigmoid/softmax and applies deltas to proposals
+
+            # 5) # Add new keys. Useless for this task.
+            pred_instances = model.roi_heads.forward_with_given_boxes(features, pred_instances)  
+            # 6) post-process results 
             outputs = model._postprocess(pred_instances, inputs, images.image_sizes)
-            # TODO drigoni: check!
+            # NOTE drigoni: code for checking results
             # processed_results = []
             # for results_per_image, input_per_image, image_size, image_proposal in zip(pred_instances, inputs, images.image_sizes, proposals):
             #     # note that "r" and  "results_per_image" are the same
@@ -197,8 +212,6 @@ def inference_on_dataset(model, data_loader, evaluator: Union[DatasetEvaluator, 
             #     print("image_proposal", image_proposal)
             #     print("results_per_image", results_per_image)
             #     r = detector_postprocess(results_per_image, height, width)
-            #     # if torch.any(r.pred_boxes.tensor != results_per_image.pred_boxes.tensor):
-            #     #    exit(1)
             #     processed_results.append({"instances": r})
             # outputs = processed_results
 
@@ -268,3 +281,39 @@ def inference_context(model):
     model.eval()
     yield
     model.train(training_mode)
+
+
+def box_predictor_inference(box_predictor, predictions, proposals):
+    """
+    Args:
+        box_predictor: for example the fastrccn model
+        predictions: return values of :meth:`forward()`.
+        proposals (list[Instances]): proposals that match the features that were
+            used to compute predictions. The ``proposal_boxes`` field is expected.
+    Returns:
+        list[Instances]: same as `fast_rcnn_inference`.
+        list[Tensor]: same as `fast_rcnn_inference`.
+    """
+    boxes = box_predictor.predict_boxes(predictions, proposals)
+    scores = box_predictor.predict_probs(predictions, proposals)
+    image_shapes = [x.image_size for x in proposals]
+    # return fast_rcnn_inference(
+    #     boxes,
+    #     scores,
+    #     image_shapes,
+    #     box_predictor.test_score_thresh,
+    #     box_predictor.test_nms_thresh,
+    #     box_predictor.test_topk_per_image,
+    # )
+    result_per_image = []
+    for scores_per_image, boxes_per_image, image_shape, img_original_proposals in zip(scores, boxes, image_shapes, proposals):
+        # img_res = fast_rcnn_inference_single_image(boxes_per_image, scores_per_image, image_shape, 
+        #                                             box_predictor.test_score_thresh, box_predictor.test_nms_thresh, box_predictor.test_topk_per_image)
+        class_score, class_idx = torch.max(scores_per_image, dim=-1)
+        img_res = Instances(image_shape)
+        img_res.pred_boxes = img_original_proposals.proposal_boxes
+        img_res.scores = class_score
+        img_res.pred_classes = class_idx
+        # indexes = 
+        result_per_image.append((img_res, class_idx))
+    return [x[0] for x in result_per_image], [x[1] for x in result_per_image]
