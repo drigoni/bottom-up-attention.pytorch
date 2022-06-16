@@ -307,8 +307,11 @@ def box_predictor_inference(box_predictor, predictions, proposals):
     # )
     result_per_image = []
     for scores_per_image, boxes_per_image, image_shape, img_original_proposals in zip(scores, boxes, image_shapes, proposals):
+        # original code
         # img_res = fast_rcnn_inference_single_image(boxes_per_image, scores_per_image, image_shape, 
         #                                             box_predictor.test_score_thresh, box_predictor.test_nms_thresh, box_predictor.test_topk_per_image)
+        # Note that are n_classes+1 logits. 
+        scores_per_image = scores_per_image[:, :-1]
         class_score, class_idx = torch.max(scores_per_image, dim=-1)
         img_res = Instances(image_shape)
         img_res.pred_boxes = img_original_proposals.proposal_boxes
