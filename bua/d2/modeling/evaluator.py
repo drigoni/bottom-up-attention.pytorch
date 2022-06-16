@@ -104,7 +104,7 @@ class DatasetEvaluators(DatasetEvaluator):
         return results
 
 
-def inference_on_dataset(model, data_loader, evaluator: Union[DatasetEvaluator, List[DatasetEvaluator], None], GT_proposals=False):
+def inference_on_dataset(model, data_loader, evaluator: Union[DatasetEvaluator, List[DatasetEvaluator], None], GT_proposals=True):
     """
     Run model on the data_loader and evaluate the metrics with evaluator.
     Also benchmark the inference speed of `model.__call__` accurately.
