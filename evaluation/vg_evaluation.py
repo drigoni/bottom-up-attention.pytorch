@@ -17,6 +17,7 @@ from detectron2.data import MetadataCatalog
 from detectron2.evaluation.evaluator import DatasetEvaluator
 from detectron2.data.datasets.coco import convert_to_coco_json
 from detectron2.evaluation.coco_evaluation import instances_to_coco_json
+import json
 
 import json
 import matplotlib.pyplot as plt

@@ -5,3 +5,4 @@ from .dataloader.build_loader import (
 from .modeling.roi_heads import AttributeRes5ROIHeads
 from .. import visual_genome
 from .config import add_attribute_config
+from bua.d2.modeling.evaluator import DatasetEvaluator, inference_on_dataset
