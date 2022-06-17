@@ -1,1 +1,1 @@
-from .vg_evaluation import VGEvaluator
+from .vg_evaluation_classification import VGEvaluator_classification

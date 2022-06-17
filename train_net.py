@@ -25,7 +25,7 @@ from bua import add_config
 from bua.d2 import build_detection_test_loader_with_attributes, build_detection_train_loader_with_attributes
 from bua.caffe.dataloader import DatasetMapper
 from opts import parse_opt
-from evaluation import VGEvaluator
+from evaluation import VGEvaluator_classification as VGEvaluator
 
 from bua.d2 import (
     DatasetEvaluator,
