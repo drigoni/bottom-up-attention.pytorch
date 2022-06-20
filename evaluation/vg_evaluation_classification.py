@@ -200,8 +200,10 @@ class VGEvaluator_classification(DatasetEvaluator):
                 tmp_dict['pred_score'] = pred_data['scores'][box_id]
                 tmp_dict['pred_class'] = pred_data['labels'][box_id]
                 assert tmp_dict['GT_class'] in data_by_class.keys()
+                assert all(tmp_dict['GT_box'] == tmp_dict['pred_box'])
                 data_by_class[tmp_dict['GT_class']].append(tmp_dict)
                 all_hits[tmp_dict['GT_class']].append(1 if tmp_dict['GT_class'] == tmp_dict['pred_class'] else 0)
+                
         # NOTE: 
         # 1) the number of GT boxes equals the number of pred boxes. 
         # 2) the GT boxes coordinates and the pred boxes coordinate are the same
