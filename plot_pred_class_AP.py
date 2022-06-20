@@ -16,6 +16,7 @@ import distutils
 import copy
 import json
 import math
+from secrets import choice
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -168,7 +169,8 @@ def parse_args():
                         default="./aps_scores.pdf",
                         type=str)
     parser.add_argument('--classes', dest='classes',
-                help='Classes to consider. all, old, new.',
+                help='Classes to consider.',
+                choices=['all', 'old', 'new'],
                 default='all',
                 type=str)
     args = parser.parse_args()
@@ -194,7 +196,6 @@ if __name__ == "__main__":
     # cleaning according to evaluation of BU model
     old_cls = [(cls.split(',')[0]).lower().strip() for cls in old_cls]
     print("Number of untouched classes: {} .".format(len(old_cls)))
-
     # transform data
     print("Processing data points in: {} .".format(args.file1))
     counting1 = apply_data_transformation(counting1, old_cls, args.classes)
