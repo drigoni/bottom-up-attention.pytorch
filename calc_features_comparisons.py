@@ -28,7 +28,7 @@ from secrets import choice
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd 
-import base64
+from sklearn.metrics.pairwise import cosine_distances, cosine_similarity
 
 
 
@@ -162,94 +162,74 @@ def load_data(img_folder, map_fn_reverse, classes_type, model_type, images_name)
     return all_data
 
 
-def visualize_tsne(datasets, n_limit, output_file, categories, model_type, apply_correction=False, use_background=False):
-    from sklearn.manifold import TSNE
-    import matplotlib.pyplot as plt
-    plt.rcParams['legend.fontsize'] = 4
-    if model_type == 'cleaned':
-        accepted_classes = {
-            '51:man,1511:young man,683:men,774:guy,1441:male': [0, 0, 0],
-            '454:window,979:windows,1422:side window,537:front window,282:skylight,1586:panes': [128, 128, 128],
-            '382:trees,292:tree,1185:pine trees,688:pine tree,1436:tree line': [255, 0, 0],
-            '365:person,635:adult,949:worker,943:pedestrian': [128, 0, 0],
-            '52:shirt,1404:tshirt,1404:t shirt,1404:t-shirt,1226:dress shirt,1099:tee shirt,1157:sweatshirt,653:undershirt,233:tank top,133:jersey,1288:blouse': [255, 255, 0],
-            '178:building,670:buildings,581:skyscraper,1193:second floor': [128, 128, 0],
-            '17:stop sign,17:stopsign,1437:sign post,941:traffic sign,589:street sign,817:signs,129:sign,245:stop': [0, 255, 0],
-            '91:woman,749:women,858:lady,996:she,1486:ladies,1245:mother,1539:bride': [0, 128, 0],
-            '1101:walls,249:wall,62:rock wall,1220:stone wall,1279:brick wall': [0, 255, 255],
-            '612:dirt,466:ground,1272:soil,1476:pebbles,1477:mud': [0, 0, 255],
-            '73:sky,1217:weather': [255, 0, 255],
-        }
-    else:
-        accepted_classes = {
-            'man': [0, 0, 0],
-            'person': [128, 128, 128],
-            'window': [255, 0, 0],
-            'shirt': [128, 0, 0],
-            'tree': [255, 255, 0],
-            'building': [128, 128, 0],
-            'wall': [0, 255, 0],
-            'sky': [0, 128, 0],
-            'sign': [0, 255, 255],
-            'woman': [0, 0, 255],
-            'ground': [255, 0, 255],
-        }
-    # colors_per_class = {i: list(np.random.choice(range(256), size=3)) for i in range(1601)}
+def exec_features_comparison(all_data_noisy, all_data_clean, map_fn_reverse, categories_noisy, categories_clean, classes_type, output_file):
 
-    c_examples = []
-    c_correction = 0
-    vector_features = []
-    vector_classes = []
-    for img_id, img_nbox, boxes_features, img_cls_ids in zip(datasets['image_id'], datasets['num_boxes'], datasets['features'], datasets['cls']):
-        # continue just if the number of examples are less than "n_limit" and it is not a duplicate
-        if len(c_examples) > n_limit:
-            break
-        else:
-            if img_id in c_examples:
-                continue
+    accepted_classes = {
+        'man': [0, 0, 0],
+        'person': [128, 128, 128],
+        'window': [255, 0, 0],
+        'shirt': [128, 0, 0],
+        'tree': [255, 255, 0],
+        'building': [128, 128, 0],
+        'wall': [0, 255, 0],
+        'sky': [0, 128, 0],
+        'sign': [0, 255, 255],
+        'woman': [0, 0, 255],
+        'ground': [255, 0, 255],
+    }
+
+    # group features by class, REMEMBER empty list when there are no bounding boxes extracted for some classes
+    features_per_class_noisy = {k: [] for k in range(len(categories_noisy))}    # index starting from 0
+    features_per_class_clean = {k: [] for k in range(len(categories_clean))}    # index starting from 0
+    for cls, features in zip(all_data_noisy['cls'], all_data_noisy['features']):
+        for c_index, f in zip(cls, features):
+            # cls_label = categories_noisy[c_index]
+            # features_per_class_noisy[cls_label].append(f)
+            features_per_class_noisy[c_index].append(f)
+    for cls, features in zip(all_data_clean['cls'], all_data_clean['features']):
+        for c_index, f in zip(cls, features):
+            # cls_label = categories_clean[c_index]
+            # features_per_class_clean[cls_label].append(f)
+            features_per_class_clean[c_index].append(f)  
+
+    # calculate clusters coordinates
+    clusters_noisy = {k: np.mean(np.array(v), axis=0) for k, v in features_per_class_noisy.items() if len(v) > 0}    # index starting from 0
+    clusters_clean = {k: np.mean(np.array(v), axis=0) for k, v in features_per_class_clean.items() if len(v) > 0}    # index starting from 0
+
+    # calculate cosine_similarity
+    clusters_distance_noisy = cosine_distances(list(clusters_noisy.values()))
+    clusters_distance_clean = cosine_distances(list(clusters_clean.values()))
+    
+    comparison = {}
+    for k, list_noisy_idx in map_fn_reverse.items():      # starting from 1
+        # check that the clean class is in the extracted features
+        if k-1 in clusters_clean.keys():
+            # mean and variance for clean classes
+            tmp_clean_key = list(clusters_clean.keys()).index(k-1)
+            mean_clean = np.mean(clusters_distance_clean[tmp_clean_key])
+            std_clean = np.std(clusters_distance_clean[tmp_clean_key])
+            # mean and variance for noisy classes
+            tmp_noisy_keys = [list(clusters_noisy.keys()).index(idx-1) for idx in list_noisy_idx if idx-1 in clusters_noisy.keys()]
+            if len(tmp_noisy_keys) > 0:
+                tmp_noisy_features = np.stack([clusters_distance_noisy[key] for key in tmp_noisy_keys], axis=0)
+                mean_noisy = np.mean(tmp_noisy_features)
+                std_noisy = np.std(tmp_noisy_features)
+                comparison[k] = [float(mean_clean), float(std_clean), float(mean_noisy), float(std_noisy), categories_clean[k-1],  len(list_noisy_idx)]
             else:
-                c_examples.append(img_id)
-        for i_proposal in range(img_nbox):
-            proposal_features = boxes_features[i_proposal]
-            proposal_class_id = img_cls_ids[i_proposal]
-            proposal_class_label = categories[proposal_class_id]
-            if proposal_class_label in accepted_classes.keys():  # filter to accept just the accepted_classed
-                vector_features.append(proposal_features)
-                vector_classes.append(proposal_class_id)
-    vector_features = np.array(vector_features)
-    vector_classes = np.array(vector_classes)
-    print("Executing T-SNE.")
-    model = TSNE(n_components=2, learning_rate='auto', init='random')
-    embeddings = model.fit_transform(vector_features)
+                comparison[k] = [float(mean_clean), float(std_clean), None, None, categories_clean[k-1], len(list_noisy_idx)]
+                print("No noisy classes found for clean class: {}|{}".format(k-1, categories_clean[k-1]))
 
-    print("Saving the plot.")
-    # def scale_to_01_range(x):
-    #     value_range = (np.max(x) - np.min(x))
-    #     starts_from_zero = x - np.min(x)
-    #     return starts_from_zero / value_range
-    # tx = scale_to_01_range(embeddings[:, 0])
-    # ty = scale_to_01_range(embeddings[:, 1])
-    tx = embeddings[:, 0]
-    ty = embeddings[:, 1]
-    # for every class, we'll add a scatter plot separately
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    for label_name in accepted_classes.keys():
-        label_idx = list(categories.values()).index(label_name)
-        # find the samples of the current class in the data
-        indices = [i for i, l in enumerate(vector_classes) if l == label_idx]
-        # extract the coordinates of the points of this class only
-        current_tx = np.take(tx, indices)
-        current_ty = np.take(ty, indices)
-        # convert the class color to matplotlib format
-        color = np.array(accepted_classes[label_name], dtype=float) / 255
-        # add a scatter plot with the corresponding color and label
-        ax.scatter(current_tx, current_ty, c=[color], label=label_name.replace('_', ''), alpha=0.5, s=0.5)
-    # build a legend using the labels we set previously
-    ax.legend(loc='best')
-    # finally, show the plot
-    file_name = output_file
-    plt.savefig(file_name, dpi=1000)
+    with open(output_file, 'w') as f:
+        json.dump(comparison, f, indent=2)
+        print('Saved file: {}'.format(output_file))
+
+    # plot hitmap
+    # plt.imshow(clusters_distance_noisy, cmap='hot')
+    # plt.colorbar()
+    # # plt.imshow(clusters_distance_clean, cmap='hot')
+    # plt.savefig(output_file, dpi=1000)
+    
+    exit(1)
 
 
 def parse_args():
@@ -259,9 +239,11 @@ def parse_args():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     # parsing
     parser = argparse.ArgumentParser(description='Inputs')
-    parser.add_argument('--extracted_features', type=str, default='./extracted_features_new_classes_v3_VG/', help='Folder of extracted features')
+    parser.add_argument('--extracted_features_noisy', type=str, default='./extracted_features_develop_VG/', help='Folder of extracted features')
+    parser.add_argument('--extracted_features_clean', type=str, default='./extracted_features_new_classes_v3_VG/', help='Folder of extracted features')
     parser.add_argument('--output_folder', type=str, default='./proposals_features_t-sne.pdf', help='Folder where to save the output file.')
-    parser.add_argument('--split_file', type=str, default='./datasets/cleaned_visual_genome/annotations/cleaned_visual_genome_val.json', help='Dataset.')
+    parser.add_argument('--split_file_noisy', type=str, default='./datasets/visual_genome/annotations/visual_genome_val.json', help='Dataset.')
+    parser.add_argument('--split_file_clean', type=str, default='./datasets/cleaned_visual_genome/annotations/cleaned_visual_genome_val.json', help='Dataset.')
     parser.add_argument('--n_limit', type=int, default=1000)
     parser.add_argument('--labels', dest='labels',
                     help='File containing the new cleaned labels. It is needed for extracting the old and new classes indexes.',
@@ -272,11 +254,6 @@ def parse_args():
                 default='all',
                 choices=['all', 'untouched', 'new'],
                 type=str)
-    parser.add_argument('--model', dest='model',
-            help='Model trained on new classes (878 labels) or model post-processed (1600 to 878 labels).',
-            default='noisy',
-            choices=['noisy', 'cleaned'],
-            type=str)
     args = parser.parse_args()
     return args
 
@@ -290,18 +267,23 @@ if __name__ == "__main__":
         map_fn_reverse[v].append(k)
 
     # get images names 
-    with open(args.split_file, 'r') as f:
+    with open(args.split_file_noisy, 'r') as f:
         dataset = json.load(f)
     images_name = [i['file_name'][:-4] for i in dataset['images']]
-    categories = {int(i['id']): i['name']  for i in dataset['categories']}
+    categories_noisy = {int(i['id']): i['name']  for i in dataset['categories']}
+    with open(args.split_file_clean, 'r') as f:
+        dataset = json.load(f)
+    images_name = [i['file_name'][:-4] for i in dataset['images']]
+    categories_clean = {int(i['id']): i['name']  for i in dataset['categories']}
 
     # check if the folder exists
-    if os.path.exists(args.extracted_features):
+    if os.path.exists(args.extracted_features_noisy) and os.path.exists(args.extracted_features_clean):
         print('Loading all data.')
-        all_data = load_data(args.extracted_features, map_fn_reverse, args.classes, args.model, images_name)
-        print("Start plotting")
-        visualize_tsne(all_data, args.n_limit, args.output_folder, categories, args.model)
+        all_data_noisy = load_data(args.extracted_features_noisy, map_fn_reverse, args.classes, "noisy", images_name)
+        all_data_clean = load_data(args.extracted_features_clean, map_fn_reverse, args.classes, "cleaned", images_name)
+        print("Start calculation")
+        exec_features_comparison(all_data_noisy, all_data_clean, map_fn_reverse, categories_noisy, categories_clean, args.classes, args.output_folder)
     else:
-        print("Folder not valid: ", args.extracted_features)
+        print("Folder not valid. ")
         exit(1)
     
