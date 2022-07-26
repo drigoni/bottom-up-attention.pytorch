@@ -163,21 +163,6 @@ def load_data(img_folder, map_fn_reverse, classes_type, model_type, images_name)
 
 
 def exec_features_comparison(all_data_noisy, all_data_clean, map_fn_reverse, categories_noisy, categories_clean, classes_type, output_file):
-
-    accepted_classes = {
-        'man': [0, 0, 0],
-        'person': [128, 128, 128],
-        'window': [255, 0, 0],
-        'shirt': [128, 0, 0],
-        'tree': [255, 255, 0],
-        'building': [128, 128, 0],
-        'wall': [0, 255, 0],
-        'sky': [0, 128, 0],
-        'sign': [0, 255, 255],
-        'woman': [0, 0, 255],
-        'ground': [255, 0, 255],
-    }
-
     # group features by class, REMEMBER empty list when there are no bounding boxes extracted for some classes
     features_per_class_noisy = {k: [] for k in range(len(categories_noisy))}    # index starting from 0
     features_per_class_clean = {k: [] for k in range(len(categories_clean))}    # index starting from 0
