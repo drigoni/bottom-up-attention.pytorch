@@ -29,6 +29,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd 
 from sklearn.metrics.pairwise import cosine_distances, cosine_similarity
+from tqdm import tqdm
 
 
 
@@ -94,7 +95,7 @@ def load_data(img_folder, map_fn_reverse, classes_type, model_type, images_name)
     # load all data ['image_id', 'image_w', 'image_h', 'num_boxes', 'boxes', 'features']
     all_data = defaultdict(list)
     count_zeros = 0
-    for img_file in onlyfiles:
+    for img_file in tqdm(onlyfiles):
         img_id = img_file.split('/')[-1][:-4]
         if img_id not in images_name:
             continue
@@ -109,6 +110,7 @@ def load_data(img_folder, map_fn_reverse, classes_type, model_type, images_name)
             data_num_bbox = f['num_bbox']
             data_boxes = f['bbox']
             data_features = f['x']
+            # print(len(data_features[0]))    # 2048
             assert data_num_bbox == len(data_info['objects']) == len(data_info['cls_prob']) == len(data_boxes) == len(data_features)
             assert img_id not in all_data['image_id']
 
@@ -162,7 +164,7 @@ def load_data(img_folder, map_fn_reverse, classes_type, model_type, images_name)
     return all_data
 
 
-def exec_features_comparison(all_data_noisy, all_data_clean, map_fn_reverse, categories_noisy, categories_clean, classes_type, output_file):
+def load_features(all_data_noisy, all_data_clean, categories_noisy, categories_clean):
     # group features by class, REMEMBER empty list when there are no bounding boxes extracted for some classes
     features_per_class_noisy = {k: [] for k in range(len(categories_noisy))}    # index starting from 0
     features_per_class_clean = {k: [] for k in range(len(categories_clean))}    # index starting from 0
@@ -176,45 +178,47 @@ def exec_features_comparison(all_data_noisy, all_data_clean, map_fn_reverse, cat
             # cls_label = categories_clean[c_index]
             # features_per_class_clean[cls_label].append(f)
             features_per_class_clean[c_index].append(f)  
+    return features_per_class_noisy, features_per_class_clean
 
+
+def inter_class_analysis(features_per_class_noisy, features_per_class_clean, map_fn_reverse, categories_clean, output_folder):
+    print("Inter class analysis")
+    # group features by class, REMEMBER empty list when there are no bounding boxes extracted for some classes
     # calculate clusters coordinates
     clusters_noisy = {k: np.mean(np.array(v), axis=0) for k, v in features_per_class_noisy.items() if len(v) > 0}    # index starting from 0
     clusters_clean = {k: np.mean(np.array(v), axis=0) for k, v in features_per_class_clean.items() if len(v) > 0}    # index starting from 0
 
     # calculate cosine_similarity
     clusters_distance_noisy = cosine_distances(list(clusters_noisy.values()))
+    # print("SHAPE: ", len(clusters_distance_noisy), len(clusters_distance_noisy[0]))       # SHAPE: N,N  e.g. (1547, 1547)
     clusters_distance_clean = cosine_distances(list(clusters_clean.values()))
     
     comparison = {}
-    for k, list_noisy_idx in map_fn_reverse.items():      # starting from 1
+    for k, list_noisy_idx in map_fn_reverse.items():      # starting from 1, while features start from 0
         # check that the clean class is in the extracted features
         if k-1 in clusters_clean.keys():
             # mean and variance for clean classes
-            tmp_clean_key = list(clusters_clean.keys()).index(k-1)
+            tmp_clean_key = list(clusters_clean.keys()).index(k-1)      # tmp_clean_key refers to the index of the class in the clusters_clean keys, which skill boxes with 0 extracted proposals.
             mean_clean = np.mean(clusters_distance_clean[tmp_clean_key])
             std_clean = np.std(clusters_distance_clean[tmp_clean_key])
             # mean and variance for noisy classes
             tmp_noisy_keys = [list(clusters_noisy.keys()).index(idx-1) for idx in list_noisy_idx if idx-1 in clusters_noisy.keys()]
             if len(tmp_noisy_keys) > 0:
-                tmp_noisy_features = np.stack([clusters_distance_noisy[key] for key in tmp_noisy_keys], axis=0)
-                mean_noisy = np.mean(tmp_noisy_features)
-                std_noisy = np.std(tmp_noisy_features)
-                comparison[k] = [float(mean_clean), float(std_clean), float(mean_noisy), float(std_noisy), categories_clean[k-1],  len(list_noisy_idx)]
+                stacked_noisy_features = np.stack([clusters_distance_noisy[key] for key in tmp_noisy_keys], axis=0)
+                mean_noisy = np.mean(stacked_noisy_features)
+                std_noisy = np.std(stacked_noisy_features)
+                comparison[k] = [float(mean_clean), float(std_clean), float(mean_noisy), float(std_noisy),  len(list_noisy_idx), categories_clean[k-1]]
             else:
-                comparison[k] = [float(mean_clean), float(std_clean), None, None, categories_clean[k-1], len(list_noisy_idx)]
+                comparison[k] = [float(mean_clean), float(std_clean), None, None, len(list_noisy_idx), categories_clean[k-1]]
                 print("No noisy classes found for clean class: {}|{}".format(k-1, categories_clean[k-1]))
+        else:
+            print("No bounding boxes founded (extracted) with class: {}|{}".format(k, categories_clean[k]))
 
+    # dump distances
+    output_file = "{}features_inter_class_cosine_distance.json".format(output_folder)
     with open(output_file, 'w') as f:
         json.dump(comparison, f, indent=2)
         print('Saved file: {}'.format(output_file))
-
-    # plot hitmap
-    # plt.imshow(clusters_distance_noisy, cmap='hot')
-    # plt.colorbar()
-    # # plt.imshow(clusters_distance_clean, cmap='hot')
-    # plt.savefig(output_file, dpi=1000)
-    
-    exit(1)
 
 
 def parse_args():
@@ -224,12 +228,11 @@ def parse_args():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     # parsing
     parser = argparse.ArgumentParser(description='Inputs')
-    parser.add_argument('--extracted_features_noisy', type=str, default='./extracted_features_develop_VG/', help='Folder of extracted features')
-    parser.add_argument('--extracted_features_clean', type=str, default='./extracted_features_new_classes_v3_VG/', help='Folder of extracted features')
-    parser.add_argument('--output_folder', type=str, default='./proposals_features_t-sne.pdf', help='Folder where to save the output file.')
+    parser.add_argument('--features_noisy', type=str, default='./extracted_features_develop_VG/', help='Folder of extracted features')
+    parser.add_argument('--features_clean', type=str, default='./extracted_features_new_classes_v3_VG/', help='Folder of extracted features')
+    parser.add_argument('--output_folder', type=str, default='./', help='Folder where to save the output file.')
     parser.add_argument('--split_file_noisy', type=str, default='./datasets/visual_genome/annotations/visual_genome_val.json', help='Dataset.')
     parser.add_argument('--split_file_clean', type=str, default='./datasets/cleaned_visual_genome/annotations/cleaned_visual_genome_val.json', help='Dataset.')
-    parser.add_argument('--n_limit', type=int, default=1000)
     parser.add_argument('--labels', dest='labels',
                     help='File containing the new cleaned labels. It is needed for extracting the old and new classes indexes.',
                     default="./evaluation/objects_vocab.txt",
@@ -239,6 +242,12 @@ def parse_args():
                 default='all',
                 choices=['all', 'untouched', 'new'],
                 type=str)
+    parser.add_argument('--analysis', dest='knn',
+            help='Analysis to perform.',
+            default='knn',
+            choices=['knn'],
+            type=str)
+    parser.add_argument('--n_limit', type=int, default=1000)
     args = parser.parse_args()
     return args
 
@@ -247,7 +256,7 @@ if __name__ == "__main__":
     args = parse_args()
     # get labels
     map_fn, cleaned_labels, old_labels = create_mapping(args.labels)
-    map_fn_reverse = defaultdict(list)
+    map_fn_reverse = defaultdict(list)  # from clean classes to noisy classes
     for k, v in map_fn.items():
         map_fn_reverse[v].append(k)
 
@@ -262,12 +271,14 @@ if __name__ == "__main__":
     categories_clean = {int(i['id']): i['name']  for i in dataset['categories']}
 
     # check if the folder exists
-    if os.path.exists(args.extracted_features_noisy) and os.path.exists(args.extracted_features_clean):
+    if os.path.exists(args.features_noisy) and os.path.exists(args.features_clean):
         print('Loading all data.')
-        all_data_noisy = load_data(args.extracted_features_noisy, map_fn_reverse, args.classes, "noisy", images_name)
-        all_data_clean = load_data(args.extracted_features_clean, map_fn_reverse, args.classes, "cleaned", images_name)
+        all_data_noisy = load_data(args.features_noisy, map_fn_reverse, args.classes, "noisy", images_name)
+        all_data_clean = load_data(args.features_clean, map_fn_reverse, args.classes, "cleaned", images_name)
+        features_per_class_noisy, features_per_class_clean = load_features(all_data_noisy, all_data_clean, categories_noisy, categories_clean)
         print("Start calculation")
-        exec_features_comparison(all_data_noisy, all_data_clean, map_fn_reverse, categories_noisy, categories_clean, args.classes, args.output_folder)
+        inter_class_analysis(features_per_class_noisy, features_per_class_clean, map_fn_reverse, categories_clean, args.output_folder)
+        # inter_class_analysis2(features_per_class_noisy, features_per_class_clean, map_fn_reverse, categories_clean, args.output_folder)
     else:
         print("Folder not valid. ")
         exit(1)

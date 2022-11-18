@@ -17,4 +17,6 @@ drigoni_pretrained/
 Dockerfile
 datasets/
 output/
+results/
+extracted_features/
 
