@@ -30,6 +30,7 @@ import numpy as np
 import pandas as pd 
 from sklearn.metrics.pairwise import cosine_distances, cosine_similarity
 from sklearn.metrics.pairwise import euclidean_distances
+from sklearn.neighbors import KNeighborsClassifier
 from tqdm import tqdm
 
 
@@ -182,42 +183,36 @@ def load_data(img_folder, map_fn_reverse, classes_type, model_type, images_name)
     return all_data
 
 
-def prepare_features(all_data_noisy, all_data_clean, categories_noisy, categories_clean):
+def prepare_features(all_data, categories):
     """
     This function prepare the features for the analysis.
-    :param all_data_noisy: all noisy data. A dict of list. categories_clean.keys() -> 'image_id', 'num_boxes', 'features', 'cls'
-    :param all_data_clean: all cleaned data
-    :param categories_noisy: list of noisy categories
-    :param categories_clean: list of clean categories
+    :param all_data: all noisy or clean data. A dict of list. categories_clean.keys() -> 'image_id', 'num_boxes', 'features', 'cls'
+    :param categories: list of noisy or clean categories
     """
     # group features by class, REMEMBER empty list when there are no bounding boxes extracted for some classes
-    features_per_class_noisy = {k: [] for k in range(len(categories_noisy))}    # index starting from 0
-    features_per_class_clean = {k: [] for k in range(len(categories_clean))}    # index starting from 0
-    for cls, features in zip(all_data_noisy['cls'], all_data_noisy['features']):
+    features_per_class = {k: [] for k in range(len(categories))}    # index starting from 0
+    features2img_per_class = {k: [] for k in range(len(categories))}    # index starting from 0
+    for image_id, cls, features in zip(range(all_data['cls']), all_data['cls'], all_data['features']):
         for c_index, f in zip(cls, features):
-            # cls_label = categories_noisy[c_index]
-            # features_per_class_noisy[cls_label].append(f)
             assert len(f) == 2048
-            features_per_class_noisy[c_index].append(f)
-    for cls, features in zip(all_data_clean['cls'], all_data_clean['features']):
-        for c_index, f in zip(cls, features):
-            # cls_label = categories_clean[c_index]
-            # features_per_class_clean[cls_label].append(f)
-            assert len(f) == 2048
-            features_per_class_clean[c_index].append(f)  
-    return features_per_class_noisy, features_per_class_clean
+            features_per_class[c_index].append(f)
+            features2img_per_class[c_index].append(image_id)
+    return features_per_class, features2img_per_class
 
 
-def knn_analysis(features, output_folder, type, n_neighbors=8):
+def knn_analysis(features, features2images, output_folder, type, n_neighbors=8):
     print("Start KNN fit with k={}.".format(n_neighbors))
-    from sklearn.neighbors import KNeighborsClassifier
+    
     # group features by class, REMEMBER empty list when there are no bounding boxes extracted for some classes
     features_dict = {k: v for k, v in features.items()}    # index starting from 0
     X_data = []
     X_labels = []
+    X_images = []
     for k, v in features_dict.items():
+        v2images = features2images[k]
         X_data.extend(v)
         X_labels.extend([k]*len(v))
+        X_images.extend(v2images)
     # X_labels, X_data =  zip(*features_dict.items())     # NOTE: X_data is a list of list of bounding boxes
     X_labels =  np.stack(X_labels, axis=0)
     X_data =  np.stack(X_data, axis=0)
@@ -252,172 +247,6 @@ def knn_analysis(features, output_folder, type, n_neighbors=8):
         print('Saved file: {}'.format(output_file))
 
 
-def intra_class_by_cleaned_classes_analysis(features_per_class_noisy, features_per_class_clean, map_fn, output_folder):
-    print("Intra class analysis")
-    clusters_clean = {k: v for k, v in features_per_class_clean.items()}    # index starting from 0
-    clusters_noisy = defaultdict(list) 
-    for k, v in features_per_class_noisy.items():
-        clean_index = map_fn[k+1]-1
-        clusters_noisy[clean_index].extend(v)                               # NOTE: list of list, one for each noisy class
-    
-    # clusters_clean -> dict, for each key there is a list of features or an empty list
-    # clusters_noisy -> dict, for each key there is a list of list of features or an empty list
-
-
-    # calculate cosine_similarity for each class to each class. No self
-    distances_clean = dict()
-    distances_noisy = dict()
-    for k in clusters_clean.keys():
-        if len(clusters_clean[k]) > 0:
-            feat_clean = np.stack(clusters_clean[k], axis=0)
-            distances_clean[k] = euclidean_distances(feat_clean, feat_clean)
-            np.fill_diagonal(distances_clean[k], 0)        # DIAGONAL VALUES TO 0, inplace operation
-        else: 
-            distances_clean[k] = None
-
-        if len(clusters_noisy[k]) > 0:
-            feat_clean = np.stack(clusters_noisy[k], axis=0)
-            distances_noisy[k] = euclidean_distances(feat_clean, feat_clean)
-            np.fill_diagonal(distances_noisy[k], 0)        # DIAGONAL VALUES TO 0, inplace operation
-        else: 
-            distances_noisy[k] = None
-    
-    results_clean = dict()
-    results_noisy = dict()
-    for k in distances_clean.keys():
-        if distances_clean[k] is not None and len(distances_clean[k]) > 1:  # 1 because if there is only one point, its distance  from itself is not interesting 
-            # remember that diagonal is 0
-            res_clean = np.sum(distances_clean[k], axis=1) / (len(distances_clean[k])-1)    # [n, n] to [n]
-            res_clean = float(np.mean(res_clean))
-        else:
-            res_clean = None
-        results_clean[k] = res_clean
-        # remember the different number of elements in each class
-        if distances_noisy[k] is not None and len(distances_noisy[k]) > 1:
-            # remember that diagonal is 0
-            res_noisy = np.sum(distances_noisy[k], axis=1) / (len(distances_noisy[k])-1)    # [n, n] to [n]
-            res_noisy = float(np.mean(res_noisy))
-        else:
-            res_noisy = None
-        results_noisy[k] = res_noisy
-
-    # dump distances
-    output_file = "{}features_cleaned_intra_class_distance.json".format(output_folder)
-    with open(output_file, 'w') as f:
-        json.dump(results_clean, f, indent=2)
-        print('Saved file: {}'.format(output_file))
-    output_file = "{}features_noisy_intra_class_distance.json".format(output_folder)
-    with open(output_file, 'w') as f:
-        json.dump(results_noisy, f, indent=2)
-        print('Saved file: {}'.format(output_file))
-
-
-
-def intra_class_analysis(features_per_class_noisy, features_per_class_clean, map_fn, output_folder):
-    print("Intra class analysis")
-    clusters_clean = {k: v for k, v in features_per_class_clean.items()}    # index starting from 0
-    clusters_noisy = {k: v for k, v in features_per_class_noisy.items()}    # index starting from 0
-    
-    # clusters_clean -> dict, for each key there is a list of features or an empty list
-    # clusters_noisy -> dict, for each key there is a list of list of features or an empty list
-
-
-    # calculate cosine_similarity for each class to each class. No self
-    distances_clean = dict()
-    for k in clusters_clean.keys():
-        if len(clusters_clean[k]) > 0:
-            feat_clean = np.stack(clusters_clean[k], axis=0)
-            distances_clean[k] = euclidean_distances(feat_clean, feat_clean)
-            np.fill_diagonal(distances_clean[k], 0)        # DIAGONAL VALUES TO 0, inplace operation
-        else: 
-            distances_clean[k] = None
-    distances_noisy = dict()
-    for k in clusters_noisy.keys():
-        if len(clusters_noisy[k]) > 0:
-            feat_noisy = np.stack(clusters_noisy[k], axis=0)
-            distances_noisy[k] = euclidean_distances(feat_noisy, feat_noisy)
-            np.fill_diagonal(distances_noisy[k], 0)        # DIAGONAL VALUES TO 0, inplace operation
-        else: 
-            distances_noisy[k] = None
-
-    # calculate mean
-    results_clean = dict()
-    for k in distances_clean.keys():
-        if distances_clean[k] is not None and len(distances_clean[k]) > 1:  # 1 because if there is only one point, its distance  from itself is not interesting 
-            # remember that diagonal is 0
-            res_clean = np.sum(distances_clean[k], axis=1) / (len(distances_clean[k])-1)    # [n, n] to [n]
-            res_clean = float(np.mean(res_clean))
-        else:
-            res_clean = None
-        results_clean[k] = res_clean
-    results_noisy = dict()
-    for k in distances_noisy.keys():
-        if distances_noisy[k] is not None and len(distances_noisy[k]) > 1:  # 1 because if there is only one point, its distance  from itself is not interesting 
-            # remember that diagonal is 0
-            res_noisy = np.sum(distances_noisy[k], axis=1) / (len(distances_noisy[k])-1)    # [n, n] to [n]
-            res_noisy = float(np.mean(res_noisy))
-        else:
-            res_noisy = None
-        results_noisy[k] = res_noisy
-
-    # filter and calculate results
-    results_clean = {k: v for k, v in results_clean.items() if v is not None}
-    results_noisy = {k: v for k, v in results_noisy.items() if v is not None}
-    for name, data in zip(['noisy', 'cleaned'], [results_noisy, results_clean]):
-        tmp_mean = round(np.mean(list(data.values())), 3)
-        tmp_std = round(np.std(list(data.values())), 3)
-        print("Average intra distances {} classes. Mean: {} || STD: {} . ".format(name, tmp_mean, tmp_std ))
-
-
-
-def inter_class_analysis(features_per_class_noisy, features_per_class_clean, map_fn, output_folder):
-    print("Inter class analysis")
-    clusters_clean = {k: np.mean(np.stack(v, axis=0), axis=0) if len(v)>0 else None for k, v in features_per_class_clean.items()}    # index starting from 0
-    clusters_noisy = {k: np.mean(np.stack(v, axis=0), axis=0) if len(v)>0 else None for k, v in features_per_class_noisy.items()}    # index starting from 0
-
-    # calculate mean
-    results_clean = dict()
-    for k in clusters_clean.keys():
-        if clusters_clean[k] is not None:
-            # remove self element
-            tmp_copy = copy.deepcopy(clusters_clean)
-            tmp_copy.pop(k)
-            other_centroids = [v for v in tmp_copy.values() if v is not None]
-            res_clean = euclidean_distances([clusters_clean[k]], np.stack(other_centroids, axis=0))
-            res_clean = float(np.mean(res_clean))
-        else:
-            res_clean = None
-        results_clean[k] = res_clean
-    results_noisy = dict()
-    for k in clusters_noisy.keys():
-        if clusters_noisy[k] is not None:
-            # remove self element
-            tmp_copy = copy.deepcopy(clusters_noisy)
-            tmp_copy.pop(k)
-            other_centroids = [v for v in tmp_copy.values() if v is not None]
-            res_noisy = euclidean_distances([clusters_noisy[k]], np.stack(other_centroids, axis=0))
-            res_noisy = float(np.mean(res_noisy))
-        else:
-            res_noisy = None
-        results_noisy[k] = res_noisy
-
-    # # dump distances
-    # output_file = "{}features_cleaned_inter_class_distance.json".format(output_folder)
-    # with open(output_file, 'w') as f:
-    #     json.dump(results_clean, f, indent=2)
-    #     print('Saved file: {}'.format(output_file))
-    # output_file = "{}features_noisy_inter_class_distance.json".format(output_folder)
-    # with open(output_file, 'w') as f:
-    #     json.dump(results_noisy, f, indent=2)
-    #     print('Saved file: {}'.format(output_file))
-    # filter and calculate results
-    results_clean = {k: v for k, v in results_clean.items() if v is not None}
-    results_noisy = {k: v for k, v in results_noisy.items() if v is not None}
-    for name, data in zip(['noisy', 'cleaned'], [results_noisy, results_clean]):
-        tmp_mean = round(np.mean(list(data.values())), 3)
-        tmp_std = round(np.std(list(data.values())), 3)
-        print("Average inter distances {} classes. Mean: {} || STD: {} . ".format(name, tmp_mean, tmp_std ))
-
 def parse_args():
     """
     Parse input arguments
@@ -441,8 +270,8 @@ def parse_args():
                 type=str)
     parser.add_argument('--analysis', dest='analysis',
             help='Analysis to perform.',
-            default='intra_distance_clean',
-            choices=['intra_distance', 'intra_distance_clean', 'inter_distance'],
+            default='knn',
+            choices=['knn', 'knn_old'],
             type=str)
     parser.add_argument('--k', dest='k',
         help='KNN value for k parameter',
@@ -475,14 +304,14 @@ if __name__ == "__main__":
         print('Loading all data.')
         all_data_noisy = load_data(args.features_noisy, map_fn_reverse, args.classes, "noisy", images_name)
         all_data_clean = load_data(args.features_clean, map_fn_reverse, args.classes, "cleaned", images_name)
-        features_per_class_noisy, features_per_class_clean = prepare_features(all_data_noisy, all_data_clean, categories_noisy, categories_clean)
+        features_per_class_noisy, features_per_class_noisy2images = prepare_features(all_data_noisy, categories_noisy)
+        features_per_class_clean, features_per_class_clean2images = prepare_features(all_data_clean, categories_clean)
         print("Start calculation")
-        if args.analysis == 'inter_distance':
-            inter_class_analysis(features_per_class_noisy, features_per_class_clean, map_fn, args.output_folder)
-        elif args.analysis == 'intra_distance':
-            intra_class_analysis(features_per_class_noisy, features_per_class_clean, map_fn, args.output_folder)
-        elif args.analysis == 'intra_distance_clean':
-            intra_class_by_cleaned_classes_analysis(features_per_class_noisy, features_per_class_clean, map_fn, args.output_folder)
+        if args.analysis == 'knn_old':
+            knn_analysis(features_per_class_noisy, features_per_class_noisy2images, args.output_folder, 'noisy', n_neighbors=args.k)
+            knn_analysis(features_per_class_clean, features_per_class_clean2images, args.output_folder, 'cleaned', n_neighbors=args.k)
+        elif args.analysis == 'knn':
+            pass
     else:
         print("Folder not valid. ")
         exit(1)
