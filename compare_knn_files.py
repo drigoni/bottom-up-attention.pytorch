@@ -81,16 +81,46 @@ def filter_classes(all_data, clean_cls_idx, classes_type):
         else:
             all_data_filtered = {int(k): v for k, v in all_data.items() if int(k)+1 not in clean_cls_idx}
     else:
-        all_data_filtered = all_data
-    
-    # all_data_filtered = {k: v for k, v in all_data_filtered.items() if v is not None}
+        all_data_filtered = {int(k): v for k, v in all_data.items()} # just change string to int representation
     return all_data_filtered
 
 
-def print_results(data_clean, data_noisy, classes_type):
+def print_results(data_clean, data_noisy, classes_type, freq_noisy_file=None, freq_clean_file=None):
+    # load frequencies file
+    if freq_noisy_file is not None and freq_clean_file is not None:
+        print("Load frequencies ofr weighted average")
+        with open(freq_noisy_file, 'r') as f:
+            freq_noisy = json.load(f)
+            freq_noisy = {int(k): v for k, v in freq_noisy.items()}
+        with open(freq_clean_file, 'r') as f:
+            freq_clean = json.load(f)
+            freq_clean = {int(k): v for k, v in freq_clean.items()}
+    else:
+        freq_noisy = {int(k): 1 for k, v in data_noisy.items()}
+        freq_clean = {int(k): 1 for k, v in data_clean.items()}
+
     for name, data in zip(['noisy', 'cleaned'], [data_noisy, data_clean]):
-        tmp_mean = round(np.mean(list(data.values())), 3)
-        tmp_std = round(np.std(list(data.values())), 3)
+        tmp_values = []
+        tmp_count = []
+        for k, v in data.items():
+            # print(data.keys())
+            # print(freq_noisy.keys())
+            # exit(1)
+            tmp_values.append(v)
+            if name == 'noisy':
+                right_frequencies = freq_noisy
+            else:
+                right_frequencies = freq_clean
+            assert k in right_frequencies
+            tmp_count.append(right_frequencies[k])
+
+        # averaging
+        tmp_mean = np.average(tmp_values, weights=tmp_count)
+        tmp_std = math.sqrt(np.average((tmp_values-tmp_mean)**2, weights=tmp_count))
+
+        # round 
+        tmp_mean = round(tmp_mean, 2)
+        tmp_std = round(tmp_std, 2)
         print("Proportion of NNs that share the right class with {} classes. Aggregation:{} || Mean: {} || STD: {} . ".format(name, classes_type, tmp_mean, tmp_std ))
 
 
@@ -101,8 +131,10 @@ def parse_args():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     # parsing
     parser = argparse.ArgumentParser(description='Inputs')
-    parser.add_argument('--results_clean', type=str, default='./analysis/knn/knn_euclidean_distance_nn1_feat_cleaned.json', help='File with results about clean features.')
-    parser.add_argument('--results_noisy', type=str, default='./analysis/knn/knn_euclidean_distance_nn1_feat_noisy.json', help='File with results about noisy features.')
+    parser.add_argument('--results_clean', type=str, default='./analysis/knn/knn_euclidean_distance_nn10_feat_cleaned.json', help='File with results about clean features.')
+    parser.add_argument('--results_noisy', type=str, default='./analysis/knn/knn_euclidean_distance_nn10_feat_noisy.json', help='File with results about noisy features.')
+    parser.add_argument('--noisy_freq_file', type=str, default='./analysis/proposals_class_frequency-extracted_features_develop_VG.json', help='File where all the frequencies are reposted for clean extracted features.')
+    parser.add_argument('--clean_freq_file', type=str, default='./analysis/proposals_class_frequency-extracted_features_new_classes_v3_VG.json', help='File where all the frequencies are reposted for clean extracted features.')
     parser.add_argument('--output_folder', type=str, default='./', help='Folder where to save the output file.')
     parser.add_argument('--labels', dest='labels',
                     help='File containing the new cleaned labels. It is needed for extracting the old and new classes indexes.',
@@ -142,7 +174,7 @@ if __name__ == "__main__":
     # check if the folder exists
     if os.path.exists(args.output_folder):
         print("Start plotting")
-        print_results(data_clean, data_noisy, args.classes)
+        print_results(data_clean, data_noisy, args.classes, args.noisy_freq_file, args.clean_freq_file)
     else:
         print("Folder not valid: ", args.output_folder)
         exit(1)

@@ -33,7 +33,7 @@ elif [[ $MODE == "exec" ]]; then
   echo "Execute container:"
   docker run \
     -u ${USER}:${USER_GROUP} \
-    --env CUDA_VISIBLE_DEVICES=${GPU} \
+    --env CUDA_VISIBLE_DEVICES=0\
     --env WANDB_API_KEY=${WANDB_KEY}\
     --name ${VERSION}-${GPU//,} \
     --runtime=nvidia \
