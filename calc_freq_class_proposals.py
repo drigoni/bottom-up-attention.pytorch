@@ -70,20 +70,9 @@ def create_mapping(labels_file):
     return map_fn, cleaned_labels, old_labels     # all in [1, 1600]
 
 
-def load_data(img_folder, map_fn_reverse, classes_type, model_type, images_name):
-    print("Considering just classes type: ", classes_type)
+def load_data(img_folder, map_fn_reverse, model_type, images_name):
     print("Model type: ", model_type)
     max_number_of_classes = 877 if model_type =='cleaned' else 1599
-    # get new classes labels
-    if classes_type != 'all':
-        if model_type == 'noisy':
-            untouched_cls_idx = {v[0]: k for k, v in map_fn_reverse.items() if len(v) == 1}
-        elif model_type == 'cleaned':
-            untouched_cls_idx = {k: v[0]  for k, v in map_fn_reverse.items() if len(v) == 1}
-        else:
-            print('Error in model type: ', model_type)
-            exit(1)
-        untouched_cls_idx = [k-1 for k, v in untouched_cls_idx.items()]
 
     # get all extracted file in the folder
     onlyfiles = [join(img_folder, f) for f in listdir(img_folder) if isfile(join(img_folder, f))]
@@ -120,20 +109,8 @@ def load_data(img_folder, map_fn_reverse, classes_type, model_type, images_name)
                 assert len(data_boxes[box_idx]) == 4
                 assert 0 <= box_label_idx <= max_number_of_classes
                 # NOTE: BE SURE EVERYTHING IS np.float32 WHEN DEALING WITH base64.b64encode() function
-                if classes_type == 'untouched':
-                    if box_label_idx in untouched_cls_idx:
-                        filtered_boxes.append(data_boxes[box_idx])
-                        filtered_features.append(data_features[box_idx])
-                elif classes_type == 'new':
-                    if box_label_idx not in untouched_cls_idx:
-                        filtered_boxes.append(data_boxes[box_idx])
-                        filtered_features.append(data_features[box_idx])
-                elif classes_type == 'all':
-                    filtered_features.append(data_features[box_idx])
-                    filtered_boxes.append(data_boxes[box_idx])
-                else:
-                    print('Error.')
-                    exit(1)
+                filtered_features.append(data_features[box_idx])
+                filtered_boxes.append(data_boxes[box_idx])
             
             if len(filtered_boxes) == 0:
                 filtered_boxes.append(np.array([0.0, 0.0, 1.0, 1.0], dtype=np.float32))
@@ -203,11 +180,6 @@ def parse_args():
                     help='File containing the new cleaned labels. It is needed for extracting the old and new classes indexes.',
                     default="./evaluation/objects_vocab.txt",
                     type=str)
-    parser.add_argument('--classes', dest='classes',
-                help='Classes to consider.',
-                default='all',
-                choices=['all', 'untouched', 'new'],
-                type=str)
     parser.add_argument('--model', dest='model',
             help='Model trained on new classes (878 labels) or model post-processed (1600 to 878 labels).',
             default='noisy',
@@ -235,7 +207,7 @@ if __name__ == "__main__":
     # check if the folder exists
     if os.path.exists(args.extracted_features):
         print('Loading all data.')
-        all_data = load_data(args.extracted_features, map_fn_reverse, args.classes, args.model, images_name)
+        all_data = load_data(args.extracted_features, map_fn_reverse, args.model, images_name)
         counter_extracted_features = get_class_frequency(all_data)
         print("Start plotting")
         plot_class_frequency(counter_extracted_features, categories, args.output_folder)

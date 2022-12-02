@@ -183,7 +183,6 @@ def setup(args):
 
 
 def model_inference(model, batched_inputs, extract_mode, dump_folder, image_h, image_w, attribute_on=False):
-
     images = model.preprocess_image(batched_inputs)
     features = model.backbone(images.tensor)
     
@@ -206,7 +205,6 @@ def model_inference(model, batched_inputs, extract_mode, dump_folder, image_h, i
             attr_scores = model.roi_heads.forward_attribute_score(pooled_features, cls_lables)
             attr_probs = F.softmax(attr_scores, dim=-1)
             attr_probs = attr_probs[r_indices]
-
         # postprocess
         height = images[0].shape[1]
         width = images[0].shape[2]
@@ -215,11 +213,9 @@ def model_inference(model, batched_inputs, extract_mode, dump_folder, image_h, i
         bboxes = r.get("pred_boxes").tensor  # box
         classes = r.get("pred_classes")  # classes
         cls_probs = cls_probs[r_indices]  # clsporbs
-
         pooled_features = pooled_features[r_indices]
 
         if extract_mode == 1: # roi_feats
-
             assert (
                 bboxes.size(0)
                 == classes.size(0)
@@ -329,6 +325,7 @@ def extract_feat(split_idx, img_list, cfg, args, actor: ActorHandle):
         if os.path.exists(os.path.join(args.output_dir, im_file.split('.')[0]+'.npz')):
             actor.update.remote(1)
             continue
+
         # else:
         #     start = True
         # if not start:
@@ -346,6 +343,7 @@ def extract_feat(split_idx, img_list, cfg, args, actor: ActorHandle):
             # print(os.path.join(args.image_dir, im_file), "is illegal!")
             actor.update.remote(1)
             continue
+        
         # dataset_dict = get_image_blob(im, cfg.MODEL.PIXEL_MEAN)
         pixel_mean = cfg.MODEL.PIXEL_MEAN if args.mode == "caffe" else 0.0
         image_h = np.size(im, 0)

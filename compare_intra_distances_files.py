@@ -69,38 +69,39 @@ def create_mapping(labels_file):
     # print(old_labels[1590], map_fn[1590], cleaned_labels[map_fn[1590]])
     return map_fn, cleaned_labels, old_labels     # all in [1, 1600]
 
-def filter_classes(all_data, clean_cls_idx, classes_type):
-    if classes_type != 'all':
-        if classes_type == 'new':
-            all_data_filtered = {k: v for k, v in all_data.items() if int(k)+1 in clean_cls_idx}
-        else:
-            all_data_filtered = {k: v for k, v in all_data.items() if int(k)+1 not in clean_cls_idx}
-    else:
-        all_data_filtered = all_data
-    
-    # all_data_filtered = {k: v for k, v in all_data_filtered.items() if v is not None}
-    return all_data_filtered
 
-
-def visualize_tsne(data_clean, data_noisy, noisy_cls_idx, clean_cls_idx, classes_type, output_file):
-    from sklearn.manifold import TSNE
-    import matplotlib.pyplot as plt
-    plt.rcParams['legend.fontsize'] = 10
-
+def print_average_results(data_clean, data_noisy, untouched_cls_idx, output_file):
+    # remove null values as couple
+    # to_remove = []
+    # for k in data_clean.keys():
+    #     if data_clean[k] is None or data_noisy[k] is None:
+    #         to_remove.append(k)
+    # for k in to_remove:
+    #     data_clean.pop(k)
+    #     data_noisy.pop(k)
     # remove null values
-    to_remove = []
-    for k in data_clean.keys():
-        if data_clean[k] is None or data_noisy[k] is None:
-            to_remove.append(k)
-    for k in to_remove:
-        data_clean.pop(k)
-        data_noisy.pop(k)
+    data_clean = {int(k): v for k, v in data_clean.items() if v is not None}
+    data_noisy = {int(k): v for k, v in data_noisy.items() if v is not None}
 
+    # weighted average
     for name, data in zip(['noisy', 'cleaned'], [data_noisy, data_clean]):
-        tmp_mean = round(np.mean(list(data.values())), 3)
-        tmp_std = round(np.std(list(data.values())), 3)
-        print("Average intra distances {} classes. Aggregation:{} || Mean: {} || STD: {} . ".format(name, classes_type, tmp_mean, tmp_std ))
-
+        for class_type in ['all', 'untouched', 'merged']:
+            means_to_consider = []
+            for k, v in data.items():
+                if class_type == 'all':
+                    means_to_consider.append(np.mean(v))
+                elif class_type == 'untouched':
+                    if k in untouched_cls_idx:
+                        means_to_consider.append(np.mean(v))
+                else:   # merged
+                    if k not in untouched_cls_idx:
+                        means_to_consider.append(np.mean(v))
+            tmp_mean = np.average(means_to_consider)
+            tmp_std = math.sqrt(np.average((means_to_consider-tmp_mean)**2))
+            tmp_mean = round(tmp_mean, 2)
+            tmp_std = round(tmp_std, 2)
+            print("Average intra distances {} classes. Aggregation:{} || Mean: {} || STD: {} . ".format(name, class_type, tmp_mean, tmp_std ))
+        print("--")
 
 def parse_args():
     """
@@ -109,18 +110,13 @@ def parse_args():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     # parsing
     parser = argparse.ArgumentParser(description='Inputs')
-    parser.add_argument('--results_clean', type=str, default='./analysis/features_cleaned_intra_class_distance.json', help='File with results about clean features.')
-    parser.add_argument('--results_noisy', type=str, default='./analysis/features_noisy_intra_class_distance.json', help='File with results about noisy features.')
+    parser.add_argument('--results_clean', type=str, default='./analysis/knn/features_cleaned_intra_class_distance.json', help='File with results about clean features.')
+    parser.add_argument('--results_noisy', type=str, default='./analysis/knn/features_noisy_intra_class_distance.json', help='File with results about noisy features.')
     parser.add_argument('--output_folder', type=str, default='./', help='Folder where to save the output file.')
     parser.add_argument('--labels', dest='labels',
                     help='File containing the new cleaned labels. It is needed for extracting the old and new classes indexes.',
                     default="./evaluation/objects_vocab.txt",
                     type=str)
-    parser.add_argument('--classes', dest='classes',
-                help='Classes to consider.',
-                default='all',
-                choices=['all', 'untouched', 'new'],
-                type=str)
     args = parser.parse_args()
     return args
 
@@ -132,8 +128,7 @@ if __name__ == "__main__":
     map_fn_reverse = defaultdict(list)
     for k, v in map_fn.items():
         map_fn_reverse[v].append(k)
-    noisy_cls_idx = [k for k, v in map_fn_reverse.items() if len(v) == 1]
-    clean_cls_idx = [k for k, v in map_fn_reverse.items() if len(v) > 1]
+    untouched_cls_idx = [k-1 for k, v in map_fn_reverse.items() if len(v) == 1]
 
     # get features comparison results 
     print('Loading all data.')
@@ -142,13 +137,10 @@ if __name__ == "__main__":
     with open(args.results_noisy, 'r') as f:
         results_noisy = json.load(f)
 
-    data_clean = filter_classes(results_clean, clean_cls_idx, args.classes)
-    data_noisy = filter_classes(results_noisy, clean_cls_idx, args.classes)
-
     # check if the folder exists
     if os.path.exists(args.output_folder):
-        print("Start plotting")
-        visualize_tsne(data_clean, data_noisy, noisy_cls_idx, clean_cls_idx, args.classes, args.output_folder)
+        print("Start averaging")
+        print_average_results(results_clean, results_noisy, untouched_cls_idx, args.output_folder)
     else:
         print("Folder not valid: ", args.output_folder)
         exit(1)

@@ -72,30 +72,15 @@ def create_mapping(labels_file):
     return map_fn, cleaned_labels, old_labels     # all in [1, 1600]
 
 
-def load_data(img_folder, map_fn_reverse, classes_type, model_type, images_name):
+def load_data(img_folder, model_type, images_name):
     """
     Load extracted features fro the given folder.
     :param img_folder: folder where there are the extracted features
-    :param map_fn_reverse: dict {CLASS: list of old classes}. CLASS values are in [1, 878].
-    :param classes_type: indicates the type of classes selected among ['all', 'untouched', 'new']
     :param model_type: indicates if the features are from a model trained on the old classes or on the new classes
     :param images_name: list of all the images to consider according to the dataset. Validation set of VG for example.
     """
-    print("Considering just classes type: ", classes_type)
     print("Model type: ", model_type)
     max_number_of_classes = 877 if model_type =='cleaned' else 1599
-    # get new classes labels
-    if classes_type != 'all':
-        if model_type == 'noisy':
-            untouched_cls_idx = {v[0]: k for k, v in map_fn_reverse.items() if len(v) == 1}
-        elif model_type == 'cleaned':
-            untouched_cls_idx = {k: v[0]  for k, v in map_fn_reverse.items() if len(v) == 1}
-        else:
-            print('Error in model type: ', model_type)
-            exit(1)
-        untouched_cls_idx = [k-1 for k, v in untouched_cls_idx.items()]
-    # NOTE: from here, untouched_cls_idx is a list of index representing the indexes of noisy/cleaned classes that where never merged in the process
-
 
     # get all extracted file in the folder
     onlyfiles = [join(img_folder, f) for f in listdir(img_folder) if isfile(join(img_folder, f))]
@@ -140,20 +125,8 @@ def load_data(img_folder, map_fn_reverse, classes_type, model_type, images_name)
                 assert len(data_boxes[box_idx]) == 4
                 assert 0 <= box_label_idx <= max_number_of_classes
                 # NOTE: BE SURE EVERYTHING IS np.float32 WHEN DEALING WITH base64.b64encode() function
-                if classes_type == 'untouched':
-                    if box_label_idx in untouched_cls_idx:
-                        filtered_boxes.append(data_boxes[box_idx])
-                        filtered_features.append(data_features[box_idx])
-                elif classes_type == 'new':
-                    if box_label_idx not in untouched_cls_idx:
-                        filtered_boxes.append(data_boxes[box_idx])
-                        filtered_features.append(data_features[box_idx])
-                elif classes_type == 'all':
-                    filtered_features.append(data_features[box_idx])
-                    filtered_boxes.append(data_boxes[box_idx])
-                else:
-                    print('Error.')
-                    exit(1)
+                filtered_features.append(data_features[box_idx])
+                filtered_boxes.append(data_boxes[box_idx])
             
             if len(filtered_boxes) == 0:
                 # filtered_boxes.append(np.array([0.0, 0.0, 1.0, 1.0], dtype=np.float32))
@@ -181,75 +154,20 @@ def load_data(img_folder, map_fn_reverse, classes_type, model_type, images_name)
     print("Number of images with zero boxes: ", count_zeros)
     return all_data
 
-
-def prepare_features(all_data_noisy, all_data_clean, categories_noisy, categories_clean):
+    
+def prepare_features(all_data, categories):
     """
     This function prepare the features for the analysis.
-    :param all_data_noisy: all noisy data. A dict of list. categories_clean.keys() -> 'image_id', 'num_boxes', 'features', 'cls'
-    :param all_data_clean: all cleaned data
-    :param categories_noisy: list of noisy categories
-    :param categories_clean: list of clean categories
+    :param all_data: all noisy or clean data. A dict of list. categories_clean.keys() -> 'image_id', 'num_boxes', 'features', 'cls'
+    :param categories: list of noisy or clean categories
     """
-    # group features by class, REMEMBER empty list when there are no bounding boxes extracted for some classes
-    features_per_class_noisy = {k: [] for k in range(len(categories_noisy))}    # index starting from 0
-    features_per_class_clean = {k: [] for k in range(len(categories_clean))}    # index starting from 0
-    for cls, features in zip(all_data_noisy['cls'], all_data_noisy['features']):
+    # Group features by class, REMEMBER empty list when there are no bounding boxes extracted for some classes
+    features_per_class = {k: [] for k in range(len(categories))}    # index starting from 0
+    for cls, features in zip(all_data['cls'], all_data['features']):
         for c_index, f in zip(cls, features):
-            # cls_label = categories_noisy[c_index]
-            # features_per_class_noisy[cls_label].append(f)
             assert len(f) == 2048
-            features_per_class_noisy[c_index].append(f)
-    for cls, features in zip(all_data_clean['cls'], all_data_clean['features']):
-        for c_index, f in zip(cls, features):
-            # cls_label = categories_clean[c_index]
-            # features_per_class_clean[cls_label].append(f)
-            assert len(f) == 2048
-            features_per_class_clean[c_index].append(f)  
-    return features_per_class_noisy, features_per_class_clean
-
-
-def knn_analysis(features, output_folder, type, n_neighbors=8):
-    print("Start KNN fit with k={}.".format(n_neighbors))
-    from sklearn.neighbors import KNeighborsClassifier
-    # group features by class, REMEMBER empty list when there are no bounding boxes extracted for some classes
-    features_dict = {k: v for k, v in features.items()}    # index starting from 0
-    X_data = []
-    X_labels = []
-    for k, v in features_dict.items():
-        X_data.extend(v)
-        X_labels.extend([k]*len(v))
-    # X_labels, X_data =  zip(*features_dict.items())     # NOTE: X_data is a list of list of bounding boxes
-    X_labels =  np.stack(X_labels, axis=0)
-    X_data =  np.stack(X_data, axis=0)
-
-    print("Start KNN predictions")
-    neigh = KNeighborsClassifier(n_neighbors=n_neighbors, weights='uniform', p=2)
-    neigh.fit(X_data, X_labels)
-    KNN_classes = list(neigh.classes_)
-    results = neigh.predict_proba(X_data)
-
-    # each key corresponds to a class index and its value is a list of predictions.
-    # so: key -> [[....], [....]]. Inner lists refer to predictions per class
-    all_results_dict = defaultdict(list)
-    for prob, y_label in zip(results, X_labels):
-        all_results_dict[y_label].append(prob)
-    
-    # each key corresponds to a class index and its value represent the average value of proportions of NN belonging to the class
-    # NOTE: the predictor sees only a subset of all classes, just those where there is a predicted bounding boxes. So it is needed a map from the 1600 to the app. 1269 
-    results_dict = dict()
-    for k, predictions in all_results_dict.items():
-        current_predictor_index = KNN_classes.index(k)
-        tmp = [el[current_predictor_index] for el in predictions]
-        score = sum(tmp)/(len(tmp)+1e-9)
-        results_dict[int(k)] = round(score * 100, 2)
-
-    print(results_dict)
-
-    # dump distances
-    output_file = "{}knn_euclidean_distance_nn{}_feat_{}.json".format(output_folder, n_neighbors, type)
-    with open(output_file, 'w') as f:
-        json.dump(results_dict, f, indent=2)
-        print('Saved file: {}'.format(output_file))
+            features_per_class[int(c_index)].append(f)
+    return features_per_class
 
 
 def intra_class_by_cleaned_classes_analysis(features_per_class_noisy, features_per_class_clean, map_fn, output_folder):
@@ -259,10 +177,8 @@ def intra_class_by_cleaned_classes_analysis(features_per_class_noisy, features_p
     for k, v in features_per_class_noisy.items():
         clean_index = map_fn[k+1]-1
         clusters_noisy[clean_index].extend(v)                               # NOTE: list of list, one for each noisy class
-    
     # clusters_clean -> dict, for each key there is a list of features or an empty list
-    # clusters_noisy -> dict, for each key there is a list of list of features or an empty list
-
+    # clusters_noisy -> dict, for each key there is a list of features or an empty list
 
     # calculate cosine_similarity for each class to each class. No self
     distances_clean = dict()
@@ -286,15 +202,15 @@ def intra_class_by_cleaned_classes_analysis(features_per_class_noisy, features_p
     results_noisy = dict()
     for k in distances_clean.keys():
         if distances_clean[k] is not None and len(distances_clean[k]) > 1:  # 1 because if there is only one point, its distance  from itself is not interesting 
-            # remember that diagonal is 0
+            # remember distances_clean[k] is a matrix of distances whose diagonal is set to 0
             res_clean = np.sum(distances_clean[k], axis=1) / (len(distances_clean[k])-1)    # [n, n] to [n]
             res_clean = float(np.mean(res_clean))
         else:
             res_clean = None
         results_clean[k] = res_clean
-        # remember the different number of elements in each class
+
         if distances_noisy[k] is not None and len(distances_noisy[k]) > 1:
-            # remember that diagonal is 0
+            # remember distances_clean[k] is a matrix of distances whose diagonal is set to 0
             res_noisy = np.sum(distances_noisy[k], axis=1) / (len(distances_noisy[k])-1)    # [n, n] to [n]
             res_noisy = float(np.mean(res_noisy))
         else:
@@ -312,68 +228,93 @@ def intra_class_by_cleaned_classes_analysis(features_per_class_noisy, features_p
         print('Saved file: {}'.format(output_file))
 
 
-
-def intra_class_analysis(features_per_class_noisy, features_per_class_clean, map_fn, output_folder):
-    print("Intra class analysis")
-    clusters_clean = {k: v for k, v in features_per_class_clean.items()}    # index starting from 0
-    clusters_noisy = {k: v for k, v in features_per_class_noisy.items()}    # index starting from 0
-    
-    # clusters_clean -> dict, for each key there is a list of features or an empty list
-    # clusters_noisy -> dict, for each key there is a list of list of features or an empty list
-
-
-    # calculate cosine_similarity for each class to each class. No self
-    distances_clean = dict()
-    for k in clusters_clean.keys():
-        if len(clusters_clean[k]) > 0:
-            feat_clean = np.stack(clusters_clean[k], axis=0)
-            distances_clean[k] = euclidean_distances(feat_clean, feat_clean)
-            np.fill_diagonal(distances_clean[k], 0)        # DIAGONAL VALUES TO 0, inplace operation
-        else: 
-            distances_clean[k] = None
-    distances_noisy = dict()
-    for k in clusters_noisy.keys():
-        if len(clusters_noisy[k]) > 0:
-            feat_noisy = np.stack(clusters_noisy[k], axis=0)
-            distances_noisy[k] = euclidean_distances(feat_noisy, feat_noisy)
-            np.fill_diagonal(distances_noisy[k], 0)        # DIAGONAL VALUES TO 0, inplace operation
-        else: 
-            distances_noisy[k] = None
-
-    # calculate mean
-    results_clean = dict()
-    for k in distances_clean.keys():
-        if distances_clean[k] is not None and len(distances_clean[k]) > 1:  # 1 because if there is only one point, its distance  from itself is not interesting 
-            # remember that diagonal is 0
-            res_clean = np.sum(distances_clean[k], axis=1) / (len(distances_clean[k])-1)    # [n, n] to [n]
-            res_clean = float(np.mean(res_clean))
-        else:
-            res_clean = None
-        results_clean[k] = res_clean
-    results_noisy = dict()
-    for k in distances_noisy.keys():
-        if distances_noisy[k] is not None and len(distances_noisy[k]) > 1:  # 1 because if there is only one point, its distance  from itself is not interesting 
-            # remember that diagonal is 0
-            res_noisy = np.sum(distances_noisy[k], axis=1) / (len(distances_noisy[k])-1)    # [n, n] to [n]
-            res_noisy = float(np.mean(res_noisy))
-        else:
-            res_noisy = None
-        results_noisy[k] = res_noisy
-
-    # filter and calculate results
-    results_clean = {k: v for k, v in results_clean.items() if v is not None}
-    results_noisy = {k: v for k, v in results_noisy.items() if v is not None}
-    for name, data in zip(['noisy', 'cleaned'], [results_noisy, results_clean]):
-        tmp_mean = round(np.mean(list(data.values())), 3)
-        tmp_std = round(np.std(list(data.values())), 3)
-        print("Average intra distances {} classes. Mean: {} || STD: {} . ".format(name, tmp_mean, tmp_std ))
+def filter_features_by_class(all_data, map_fn_reverse, class_type, model_type):
+    """
+    This function filter the features according to the class_type used in the inter_distances calculations.
+    :param all_data: All data as a dict of leist of each key. The key is a class index.
+    :param  map_fn_reverse: mapping function from new classes to old classes.
+    :param class_type: type of class in ['all', 'untouched', 'new']/
+    :param model_type: the type of the features in input. Value in ['noisy', 'cleaned']. This is needed just to select the right untouched indexes.
+    """
+    print("Considering just classes type: ", class_type)
+    if class_type == 'all':
+        return all_data
+    elif class_type == 'untouched':
+        # retrieve untouched classes indexes
+        if model_type == 'noisy':
+            untouched_cls_idx = [v[0]-1 for k, v in map_fn_reverse.items() if len(v) == 1]
+        else: # noisy
+            untouched_cls_idx = [k-1  for k, v in map_fn_reverse.items() if len(v) == 1]
+        # filter
+        return {k: v for k, v in all_data.items() if k in untouched_cls_idx}
+    else:   # new
+        # retrieve untouched classes indexes
+        if model_type == 'noisy':
+            untouched_cls_idx = [v[0]-1 for k, v in map_fn_reverse.items() if len(v) == 1]
+        else: # noisy
+            untouched_cls_idx = [k-1  for k, v in map_fn_reverse.items() if len(v) == 1]
+        # filter
+        return {k: v for k, v in all_data.items() if k not in untouched_cls_idx}
 
 
+#def inter_class_analysis(features_per_class_noisy, features_per_class_clean, map_fn, output_folder):
+#    print("Inter class analysis")
+#    clusters_clean = {k: np.mean(np.stack(v, axis=0), axis=0) if len(v)>0 else None for k, v in features_per_class_clean.items()}    # index starting from 0
+#    clusters_noisy = {k: np.mean(np.stack(v, axis=0), axis=0) if len(v)>0 else None for k, v in features_per_class_noisy.items()}    # index starting from 0
+#
+#    # calculate mean
+#    results_clean = dict()
+#    for k in clusters_clean.keys():
+#        if clusters_clean[k] is not None:
+#            # remove self element
+#            tmp_copy = copy.deepcopy(clusters_clean)
+#            tmp_copy.pop(k)
+#            other_centroids = [v for v in tmp_copy.values() if v is not None]
+#            res_clean = euclidean_distances([clusters_clean[k]], np.stack(other_centroids, axis=0))
+#            res_clean = float(np.mean(res_clean))
+#        else:
+#            res_clean = None
+#        results_clean[k] = res_clean
+#    results_noisy = dict()
+#    for k in clusters_noisy.keys():
+#        if clusters_noisy[k] is not None:
+#            # remove self element
+#            tmp_copy = copy.deepcopy(clusters_noisy)
+#            tmp_copy.pop(k)
+#            other_centroids = [v for v in tmp_copy.values() if v is not None]
+#            res_noisy = euclidean_distances([clusters_noisy[k]], np.stack(other_centroids, axis=0))
+#            res_noisy = float(np.mean(res_noisy))
+#        else:
+#            res_noisy = None
+#        results_noisy[k] = res_noisy
+#
+#    # # dump distances
+#    # output_file = "{}features_cleaned_inter_class_distance.json".format(output_folder)
+#    # with open(output_file, 'w') as f:
+#    #     json.dump(results_clean, f, indent=2)
+#    #     print('Saved file: {}'.format(output_file))
+#    # output_file = "{}features_noisy_inter_class_distance.json".format(output_folder)
+#    # with open(output_file, 'w') as f:
+#    #     json.dump(results_noisy, f, indent=2)
+#    #     print('Saved file: {}'.format(output_file))
+#    # filter and calculate results
+#    results_clean = {k: v for k, v in results_clean.items() if v is not None}
+#    results_noisy = {k: v for k, v in results_noisy.items() if v is not None}
+#    for name, data in zip(['noisy', 'cleaned'], [results_noisy, results_clean]):
+#        tmp_mean = round(np.mean(list(data.values())), 3)
+#        tmp_std = round(np.std(list(data.values())), 3)
+#        print("Average inter distances {} classes. Mean: {} || STD: {} . ".format(name, tmp_mean, tmp_std ))
 
-def inter_class_analysis(features_per_class_noisy, features_per_class_clean, map_fn, output_folder):
+
+def inter_class_analysis(features_per_class_noisy, features_per_class_clean, map_fn, output_folder, micro_average=True):
     print("Inter class analysis")
-    clusters_clean = {k: np.mean(np.stack(v, axis=0), axis=0) if len(v)>0 else None for k, v in features_per_class_clean.items()}    # index starting from 0
-    clusters_noisy = {k: np.mean(np.stack(v, axis=0), axis=0) if len(v)>0 else None for k, v in features_per_class_noisy.items()}    # index starting from 0
+    clusters_clean = {k: np.mean(np.stack(v, axis=0), axis=0) if len(v)>0 else None 
+                        for k, v in features_per_class_clean.items()}    # index starting from 0
+    freq_clean = {k: len(v) for k, v in features_per_class_clean.items()}
+    clusters_noisy = {k: np.mean(np.stack(v, axis=0), axis=0) if len(v)>0 else None 
+                        for k, v in features_per_class_noisy.items()}    # index starting from 0
+    freq_noisy = {k: len(v) for k, v in features_per_class_noisy.items()}
+    
 
     # calculate mean
     results_clean = dict()
@@ -401,21 +342,31 @@ def inter_class_analysis(features_per_class_noisy, features_per_class_clean, map
             res_noisy = None
         results_noisy[k] = res_noisy
 
-    # # dump distances
-    # output_file = "{}features_cleaned_inter_class_distance.json".format(output_folder)
-    # with open(output_file, 'w') as f:
-    #     json.dump(results_clean, f, indent=2)
-    #     print('Saved file: {}'.format(output_file))
-    # output_file = "{}features_noisy_inter_class_distance.json".format(output_folder)
-    # with open(output_file, 'w') as f:
-    #     json.dump(results_noisy, f, indent=2)
-    #     print('Saved file: {}'.format(output_file))
-    # filter and calculate results
+    # NOTE: always weigthed average
     results_clean = {k: v for k, v in results_clean.items() if v is not None}
     results_noisy = {k: v for k, v in results_noisy.items() if v is not None}
     for name, data in zip(['noisy', 'cleaned'], [results_noisy, results_clean]):
-        tmp_mean = round(np.mean(list(data.values())), 3)
-        tmp_std = round(np.std(list(data.values())), 3)
+        tmp_values = []
+        tmp_count = []
+        for k, v in data.items():
+            tmp_values.append(v)
+            if name == 'noisy':
+                selected_frequencies = freq_noisy
+            else:
+                selected_frequencies = freq_clean
+            assert k in selected_frequencies
+            tmp_count.append(selected_frequencies[k])
+
+        # averaging
+        if micro_average:
+            tmp_mean = np.average(tmp_values, weights=tmp_count)
+            tmp_std = math.sqrt(np.average((tmp_values-tmp_mean)**2, weights=tmp_count))
+        else:
+            tmp_mean = np.average(tmp_values)
+            tmp_std = math.sqrt(np.average((tmp_values-tmp_mean)**2))
+        # round 
+        tmp_mean = round(tmp_mean, 2)
+        tmp_std = round(tmp_std, 2)
         print("Average inter distances {} classes. Mean: {} || STD: {} . ".format(name, tmp_mean, tmp_std ))
 
 def parse_args():
@@ -435,14 +386,14 @@ def parse_args():
                     default="./evaluation/objects_vocab.txt",
                     type=str)
     parser.add_argument('--classes', dest='classes',
-                help='Classes to consider.',
+                help='Classes to consider. Just for "inter_distance" calculation.',
                 default='all',
                 choices=['all', 'untouched', 'new'],
                 type=str)
     parser.add_argument('--analysis', dest='analysis',
             help='Analysis to perform.',
-            default='intra_distance_clean',
-            choices=['intra_distance', 'intra_distance_clean', 'inter_distance'],
+            default='inter_distance',
+            choices=['inter_distance', 'intra_distance'],
             type=str)
     parser.add_argument('--k', dest='k',
         help='KNN value for k parameter',
@@ -473,15 +424,17 @@ if __name__ == "__main__":
     # check if the folder exists
     if os.path.exists(args.features_noisy) and os.path.exists(args.features_clean):
         print('Loading all data.')
-        all_data_noisy = load_data(args.features_noisy, map_fn_reverse, args.classes, "noisy", images_name)
-        all_data_clean = load_data(args.features_clean, map_fn_reverse, args.classes, "cleaned", images_name)
-        features_per_class_noisy, features_per_class_clean = prepare_features(all_data_noisy, all_data_clean, categories_noisy, categories_clean)
+        all_data_noisy = load_data(args.features_noisy, "noisy", images_name)
+        all_data_clean = load_data(args.features_clean, "cleaned", images_name)
+        features_per_class_noisy = prepare_features(all_data_noisy, categories_noisy)
+        features_per_class_clean = prepare_features(all_data_clean, categories_clean)
         print("Start calculation")
         if args.analysis == 'inter_distance':
+            # filtering by class type
+            features_per_class_noisy = filter_features_by_class(features_per_class_noisy, map_fn_reverse, args.classes,'noisy')
+            features_per_class_clean = filter_features_by_class(features_per_class_clean, map_fn_reverse, args.classes, 'cleaned')
             inter_class_analysis(features_per_class_noisy, features_per_class_clean, map_fn, args.output_folder)
         elif args.analysis == 'intra_distance':
-            intra_class_analysis(features_per_class_noisy, features_per_class_clean, map_fn, args.output_folder)
-        elif args.analysis == 'intra_distance_clean':
             intra_class_by_cleaned_classes_analysis(features_per_class_noisy, features_per_class_clean, map_fn, args.output_folder)
     else:
         print("Folder not valid. ")
