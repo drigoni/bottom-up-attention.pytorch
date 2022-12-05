@@ -237,7 +237,7 @@ def knn_analysis_old(features, output_folder, type, n_neighbors=8):
         print('Saved file: {}'.format(output_file))
 
 
-def knn_analysis(features, features2images, output_folder, model_type, ignore_points_from_same_image=False, micro_average=True):
+def knn_analysis(features, features2images, output_folder, model_type, ignore_points_from_same_image=True, micro_average=True):
     print("Start KNN analysis")
     # group features by class, REMEMBER empty list when there are no bounding boxes extracted for some classes
     features_dict = {int(k): v for k, v in features.items()}    # index starting from 0
