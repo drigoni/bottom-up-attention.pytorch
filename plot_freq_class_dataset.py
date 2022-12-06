@@ -81,7 +81,7 @@ def draw_plot(counting, output):
     ax.set_ylabel('Frequency')
     plt.savefig(output)  
     print('Saved plot: {}'.format(output))
-    text_output = output[:-4] + '.txt'
+    text_output = output[:-4] + '.json'
     with open(text_output, 'w') as f:
         json.dump(counting_sorted, f, indent=2)
     print('Saved file: {}'.format(text_output))
@@ -137,7 +137,7 @@ def parse_args():
                         help='Dataset file or frequency file.',
                         default="./datasets/visual_genome/annotations/visual_genome_train.json",
                         type=str)
-    parser.add_argument('--file2', dest='file2',
+    parser.add_argument('--compare', dest='compare',
                         help='None or frequency file.',
                         default=None,
                         type=str)
@@ -155,7 +155,7 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    if args.file2 is None:
+    if args.compare is None:
         # extract frequency just for one split of dataset
         annotations = load_dataset(args.file)
         categories = get_all_classes(annotations)
@@ -165,7 +165,7 @@ if __name__ == "__main__":
     else:
         with open(args.file, 'r') as f:
             counting1 = json.load(f)
-        with open(args.file2, 'r') as f:
+        with open(args.compare, 'r') as f:
             counting2 = json.load(f)
         # plots together the frequencies reported in two files
         if args.loglog is False:
