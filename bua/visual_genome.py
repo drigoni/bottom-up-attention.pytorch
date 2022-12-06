@@ -143,11 +143,23 @@ def register_coco_instances_with_attributes(name, metadata, json_file, image_roo
 # ==== Predefined splits for visual genome images ===========
 _PREDEFINED_SPLITS_VG = {
     "visual_genome_train": ("visual_genome/images", 
-                            "cleaned_visual_genome/annotations/cleaned_visual_genome_train.json"),
+                            "visual_genome/annotations/visual_genome_train.json"),
     "visual_genome_val": ("visual_genome/images", 
-                          "cleaned_visual_genome/annotations/cleaned_visual_genome_val.json"),
+                          "visual_genome/annotations/visual_genome_val.json"),
     "visual_genome_test": ("visual_genome/images", 
+                           "visual_genome/annotations/visual_genome_test.json"),
+    "visual_genome_cleaned_train": ("visual_genome/images", 
+                            "cleaned_visual_genome/annotations/cleaned_visual_genome_train.json"),
+    "visual_genome_cleaned_val": ("visual_genome/images", 
+                          "cleaned_visual_genome/annotations/cleaned_visual_genome_val.json"),
+    "visual_genome_cleaned_test": ("visual_genome/images", 
                            "cleaned_visual_genome/annotations/cleaned_visual_genome_test.json"),
+    "visual_genome_random_train": ("visual_genome/images", 
+                            "random_visual_genome/annotations/random_visual_genome_train.json"),
+    "visual_genome_random_val": ("visual_genome/images", 
+                          "random_visual_genome/annotations/random_visual_genome_val.json"),
+    "visual_genome_random_test": ("visual_genome/images", 
+                           "random_visual_genome/annotations/random_visual_genome_test.json"),
 }
 
 def register_all_vg(root):

@@ -115,7 +115,7 @@ def parse_args():
     parser.add_argument('--output_folder', type=str, default='./', help='Folder where to save the output file.')
     parser.add_argument('--labels', dest='labels',
                     help='File containing the new cleaned labels. It is needed for extracting the old and new classes indexes.',
-                    default="./evaluation/objects_vocab.txt",
+                    default="./evaluation/objects_vocab_cleaned.txt",
                     type=str)
     args = parser.parse_args()
     return args

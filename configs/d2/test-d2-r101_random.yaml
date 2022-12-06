@@ -1,0 +1,16 @@
+_BASE_: "base-d2_cleaned.yaml"
+MODEL:
+  WEIGHTS: "drigoni_pretrained/drigoni_bua-d2-frcn-r101_random.pth"
+  BUA:
+    ATTRIBUTE_ON: True
+    EXTRACTOR:
+      MODE: 1
+      MIN_BOXES: 10
+      MAX_BOXES: 20
+      CONF_THRESH: 0.4
+  RESNETS:
+    DEPTH: 101
+  ROI_HEADS:
+    SCORE_THRESH_TEST: 0.05
+TEST:
+  DETECTIONS_PER_IMAGE: 100

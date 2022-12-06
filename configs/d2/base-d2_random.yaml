@@ -14,8 +14,8 @@ MODEL:
     POOLER_SAMPLING_RATIO: 2
     SMOOTH_L1_BETA: 1.
 DATASETS:
-  TRAIN: ("visual_genome_cleaned_train",)
-  TEST: ("visual_genome_cleaned_test",)
+  TRAIN: ("visual_genome_random_train",)
+  TEST: ("visual_genome_random_test",)
 SOLVER:
   IMS_PER_BATCH: 8
   BASE_LR: 0.01

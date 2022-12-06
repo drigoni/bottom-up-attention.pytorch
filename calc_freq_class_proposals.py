@@ -178,7 +178,7 @@ def parse_args():
     parser.add_argument('--split_file', type=str, default='./datasets/cleaned_visual_genome/annotations/cleaned_visual_genome_val.json', help='Dataset.')
     parser.add_argument('--labels', dest='labels',
                     help='File containing the new cleaned labels. It is needed for extracting the old and new classes indexes.',
-                    default="./evaluation/objects_vocab.txt",
+                    default="./evaluation/objects_vocab_cleaned.txt",
                     type=str)
     parser.add_argument('--model', dest='model',
             help='Model trained on new classes (878 labels) or model post-processed (1600 to 878 labels).',

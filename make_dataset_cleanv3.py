@@ -209,7 +209,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--labels', dest='labels',
                         help='File containing the new cleaned labels.',
-                        default="./evaluation/objects_vocab.txt",
+                        default="./evaluation/objects_vocab_cleaned.txt",
                         type=str)
     args = parser.parse_args()
     return args

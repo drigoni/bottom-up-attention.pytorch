@@ -70,7 +70,14 @@ class VGEvaluator(DatasetEvaluator):
         self._classes = ['__background__']
         self._class_to_ind = {}
         self._class_to_ind[self._classes[0]] = 0
-        with open(os.path.join('evaluation/objects_vocab.txt')) as f:
+        if 'cleaned' in cfg.DATASETS.TEST:
+            filte_to_open = 'evaluation/objects_vocab_cleaned.txt'
+        elif 'random' in cfg.DATASETS.TEST:
+            filte_to_open = 'evaluation/objects_vocab_random.txt'
+        else:
+            filte_to_open = 'evaluation/objects_vocab.txt'
+        print("Evaluation considering classes: ", filte_to_open)
+        with open(os.path.join(filte_to_open)) as f:
             count = 1
             for object in f.readlines():
                 names = [n.lower().strip() for n in object.split(',')]
