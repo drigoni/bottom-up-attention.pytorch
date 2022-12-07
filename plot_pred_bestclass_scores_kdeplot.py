@@ -17,6 +17,7 @@ import distutils
 import copy
 import json
 import math
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -101,31 +102,36 @@ def draw_plots_together(data1, data2, output, classes_type):
     # default colors
     # ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
     # print(plt.rcParams['axes.prop_cycle'].by_key()['color'])
+    # matplotlib.rcParams.update({'font.size': 22})
     assert len(data1) == len(data2)
     # plotting
     sns.kdeplot(data=data1,
                 color='#1f77b4',
                 cut=0,
                 common_norm=False,
-                label='BU post-processing')
+                label='BU Original Mapped to Clean')
     sns.kdeplot(data=data2,
                 color='#ff7f0e',
                 cut=0,
                 common_norm=False,
-                label='BU cleaned classes')
+                label='BU Cleaned')
     if str.lower(classes_type) == 'all':
-        plt.title('All Classes')
+        plt.title('All Categories', fontsize=22)   
     elif str.lower(classes_type) == 'old':
-        plt.title('Old Classes')
+        plt.title('Untouched Categories', fontsize=22)   
     elif str.lower(classes_type) == 'new':
-        plt.title('New Classes')
+        plt.title('Merged Categories', fontsize=22)   
     else:
         print('Error. Type of class error {}.'.format(classes_type))
     plt.legend(loc="upper right")
     ax = plt.gca()
-    ax.set_xlabel('Probability Scores')      
+    ax.set_xlabel('Probability Scores', fontsize=16)    
+    ax.set_ylabel('Density', fontsize=16)    
     # ax.set_ylabel('Average Confidence')
-    plt.savefig(output)  
+    plt.tight_layout(pad=0.05)
+    plt.xlim([0, 0.57])
+    plt.ylim([0, 7])
+    plt.savefig(output,  dpi=300)  
     print('Saved plot: {}'.format(output))
 
 
@@ -133,6 +139,7 @@ def draw_plot(data, output, label, color, classes_type):
     # default colors
     # ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
     # print(plt.rcParams['axes.prop_cycle'].by_key()['color'])
+    # matplotlib.rcParams.update({'font.size': 14})
     # plotting
     sns.kdeplot(data=data,
                 color=color,
@@ -140,18 +147,21 @@ def draw_plot(data, output, label, color, classes_type):
                 common_norm=False,
                 label=label)
     if str.lower(classes_type) == 'all':
-        plt.title('All Classes')
+        plt.title('All Categories', fontsize=22)
     elif str.lower(classes_type) == 'old':
-        plt.title('Old Classes')
+        plt.title('Untouched Categories', fontsize=22)
     elif str.lower(classes_type) == 'new':
-        plt.title('New Classes')
+        plt.title('Merged Categories', fontsize=22)
     else:
         print('Error. Type of class error {}.'.format(classes_type))
     plt.legend(loc="upper right")
     ax = plt.gca()
-    ax.set_xlabel('Probability Scores')      
+    ax.set_xlabel('Probability Scores', fontsize=16)      
     # ax.set_ylabel('Average Confidence')
-    plt.savefig(output)  
+    plt.tight_layout(pad=0.1)
+    plt.xlim([0, 0.57])
+    plt.ylim([0, 7])
+    plt.savefig(output,  dpi=300)  
     print('Saved plot: {}'.format(output))
 
 
@@ -221,12 +231,12 @@ if __name__ == "__main__":
         output_data = torch.load(args.file1)
         data = extract_data(output_data, old_cls_idx, args.classes)
         data = select_information(data, args.inf_type)
-        draw_plot(data, args.output, 'BU post-processing', '#1f77b4', args.classes)
+        draw_plot(data, args.output, 'BU Original Mapped to Clean', '#1f77b4', args.classes)
     elif args.file1 is None and args.file2 is not None:
         # loading data points
         output_data = torch.load(args.file2)
         data = extract_data(output_data, old_cls_idx, args.classes)
         data = select_information(data, args.inf_type)
-        draw_plot(data, args.output, 'BU cleaned classes', '#ff7f0e', args.classes)
+        draw_plot(data, args.output, 'BU Cleaned', '#ff7f0e', args.classes)
     else:
         print("Command line parameter error.")

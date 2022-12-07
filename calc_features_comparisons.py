@@ -383,7 +383,7 @@ def parse_args():
     parser.add_argument('--split_file_clean', type=str, default='./datasets/cleaned_visual_genome/annotations/cleaned_visual_genome_val.json', help='Dataset.')
     parser.add_argument('--labels', dest='labels',
                     help='File containing the new cleaned labels. It is needed for extracting the old and new classes indexes.',
-                    default="./evaluation/objects_vocab_cleaned.txt",
+                    default="./evaluation/objects_vocab.txt",
                     type=str)
     parser.add_argument('--classes', dest='classes',
                 help='Classes to consider. Just for "inter_distance" calculation.',
