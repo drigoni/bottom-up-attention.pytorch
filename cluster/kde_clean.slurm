@@ -56,7 +56,6 @@ echo ''
 
 module load CUDA
 
-# todo
 # srun python plot_pred_bestclass_scores_kdeplot.py   --file1 ./results/output_develop_postmapping/inference/instances_predictions.pth \ # different results, probably due tu results evaluated on valid set and not test set at that time
 srun python plot_pred_bestclass_scores_kdeplot.py   --file1 ./results/output_develop_postprocessing_clean/inference/instances_predictions.pth \
                                                     --file2 ./results/output_new_classes_v3/inference/instances_predictions.pth \

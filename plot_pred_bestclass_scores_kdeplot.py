@@ -106,15 +106,15 @@ def draw_plots_together(data1, data2, output, classes_type):
     assert len(data1) == len(data2)
     # plotting
     sns.kdeplot(data=data1,
-                color='#1f77b4',
+                color='#1f77b4', # 1f77b4
                 cut=0,
                 common_norm=False,
-                label='BUA Original Mapped to Clean')
+                label='BUA Original Mapped to Random')
     sns.kdeplot(data=data2,
-                color='#ff7f0e',
+                color='#7f4f24',    #ff7f0e
                 cut=0,
                 common_norm=False,
-                label='BUA Cleaned')
+                label='BUA Random')
     if str.lower(classes_type) == 'all':
         plt.title('All Categories', fontsize=22)   
     elif str.lower(classes_type) == 'old':
@@ -231,12 +231,12 @@ if __name__ == "__main__":
         output_data = torch.load(args.file1)
         data = extract_data(output_data, old_cls_idx, args.classes)
         data = select_information(data, args.inf_type)
-        draw_plot(data, args.output, 'BUA Original Mapped to Clean', '#1f77b4', args.classes)
+        draw_plot(data, args.output, 'BUA Original Mapped to Random', '#1f77b4', args.classes)
     elif args.file1 is None and args.file2 is not None:
         # loading data points
         output_data = torch.load(args.file2)
         data = extract_data(output_data, old_cls_idx, args.classes)
         data = select_information(data, args.inf_type)
-        draw_plot(data, args.output, 'BUA Cleaned', '#ff7f0e', args.classes)
+        draw_plot(data, args.output, 'BUA Random', '#ff7f0e', args.classes)
     else:
         print("Command line parameter error.")

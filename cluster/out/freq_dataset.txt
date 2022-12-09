@@ -1,0 +1,27 @@
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX 
+Date:  Fri Dec 9 15:57:46 CET 2022
+Directory:  /home/users/u100142/project_directory/drigoni/bottom-up-attention.pytorch
+Nodelist:  mel2165
+Number of nodes:  1
+Ntasks per node:  1
+NGPUs per node:  4
+CUDA_VISIBLE_DEVICES:  0,1,2,3
+TORCH_DEVICE_COUNT:  4
+SLURM_MASTER_PORT:  19942
+SLURM_MASTER_NODE:  mel2165
+SLURM_MASTER_ADDR:  mel2165
+SLURM_MASTER_URL:  tcp://mel2165:19942
+--------------------------------------------- 
+MODEL_NUM_GPUS:  4
+MODEL_NUM_MACHINES:  1
+MODEL_BATCH_SIZE:  20
+MODEL_MAX_ITER:  144000
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX 
+
+/var/spool/parastation/jobs/249942: line 57: module: command not found
+Saved plot: ./classes_frequency.pdf
+
+
+Job done.
+Date:  Fri Dec 9 15:57:58 CET 2022
