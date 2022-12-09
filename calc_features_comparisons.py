@@ -395,10 +395,6 @@ def parse_args():
             default='inter_distance',
             choices=['inter_distance', 'intra_distance'],
             type=str)
-    parser.add_argument('--k', dest='k',
-        help='KNN value for k parameter',
-        default='10',
-        type=int)
     args = parser.parse_args()
     return args
 

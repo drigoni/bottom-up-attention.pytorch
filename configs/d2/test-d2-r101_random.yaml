@@ -1,4 +1,4 @@
-_BASE_: "base-d2_cleaned.yaml"
+_BASE_: "base-d2_random.yaml"
 MODEL:
   WEIGHTS: "drigoni_pretrained/drigoni_bua-d2-frcn-r101_random.pth"
   BUA:

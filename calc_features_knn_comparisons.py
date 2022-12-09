@@ -237,7 +237,7 @@ def knn_analysis_old(features, output_folder, type, n_neighbors=8):
         print('Saved file: {}'.format(output_file))
 
 
-def knn_analysis(features, features2images, output_folder, model_type, ignore_points_from_same_image=True, micro_average=True):
+def knn_analysis(features, features2images, output_folder, model_type, ignore_points_from_same_image=False, micro_average=True):
     print("Start KNN analysis")
     # group features by class, REMEMBER empty list when there are no bounding boxes extracted for some classes
     features_dict = {int(k): v for k, v in features.items()}    # index starting from 0
@@ -258,7 +258,7 @@ def knn_analysis(features, features2images, output_folder, model_type, ignore_po
     X_images =  np.stack(X_images, axis=0)     # [N]
     assert X_data.shape[0] == X_labels.shape[0] == X_images.shape[0]
 
-    print("Start KNN predictions with n_neighbors=200. Note: features from the same image are ignored")
+    print("Start KNN predictions with n_neighbors=200.")
     neigh = KNeighborsClassifier(n_neighbors=200, weights='uniform', p=2)
     neigh.fit(X_data, X_labels)
     # results = neigh.predict_proba(X_data)
@@ -287,6 +287,7 @@ def knn_analysis(features, features2images, output_folder, model_type, ignore_po
 
         # retrieve indexes images and filter them
         if ignore_points_from_same_image:
+            print("Note: features from the same image are ignored")
             neig_images = X_images[neig_indexes]
             neig_images_boolean = (neig_images != el_image)
             neig_available = neig_indexes[neig_images_boolean]    
@@ -309,7 +310,7 @@ def knn_analysis(features, features2images, output_folder, model_type, ignore_po
         untouched_cls_idx = [v[0]-1 for k, v in map_fn_reverse.items() if len(v) == 1]
     elif model_type == 'cleaned':
         untouched_cls_idx = [k-1  for k, v in map_fn_reverse.items() if len(v) == 1]
-    assert len(untouched_cls_idx) == 515 # number of untouched classes
+    # assert len(untouched_cls_idx) == 515 # number of untouched classes
 
     # weighted average
     for value, res_storage in zip([1, 5, 10, 100], [results_1, results_5, results_10, results_100]):
