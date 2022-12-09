@@ -373,6 +373,9 @@ def parse_args():
             help='KNN parameter k',
             default=10,
             type=int)
+    parser.add_argument('--ignore', dest='ignore',
+                        help='True to ignore features from same image.',
+                        action='store_true')
     args = parser.parse_args()
     return args
 
@@ -408,8 +411,8 @@ if __name__ == "__main__":
             knn_analysis_old(features_per_class_noisy, args.output_folder, 'noisy', n_neighbors=args.k)
             knn_analysis_old(features_per_class_clean, args.output_folder, 'cleaned', n_neighbors=args.k)
         elif args.analysis == 'knn':
-            knn_analysis(features_per_class_noisy, features_per_class_noisy2images, args.output_folder, 'noisy')
-            knn_analysis(features_per_class_clean, features_per_class_clean2images, args.output_folder, 'cleaned')
+            knn_analysis(features_per_class_noisy, features_per_class_noisy2images, args.output_folder, 'noisy', args.ignore)
+            knn_analysis(features_per_class_clean, features_per_class_clean2images, args.output_folder, 'cleaned', args.ignore)
     else:
         print("Folder not valid. ")
         exit(1)

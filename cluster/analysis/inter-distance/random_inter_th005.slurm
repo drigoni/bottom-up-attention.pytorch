@@ -2,10 +2,10 @@
 ### Owner: Davide Rigoni
 
 ### ============ SLURM COMMANDS
-#SBATCH --job-name='random_labels_centroids_th005'     # create a short name for your job
+#SBATCH --job-name='random_labels_inter-distance_th005'     # create a short name for your job
 #SBATCH --account=p200049                           
 #SBATCH --mail-user=davide.rigoni.2@phd.unipd.it
-#SBATCH --output=cluster/out/random_labels_centroids_th005.txt
+#SBATCH --output=cluster/out/random_labels_inter-distance_th005.txt
 #SBATCH --partition=gpu
 #SBATCH --qos=short
 #SBATCH --mem=100GB				                    # total memory per node
@@ -65,20 +65,24 @@ srun python calc_features_comparisons.py    --analysis inter_distance \
                                             --labels ./evaluation/objects_vocab_random.txt \
                                             --classes all
 
-
-srun python calc_features_comparisons.py    --analysis intra_distance \
+srun python calc_features_comparisons.py    --analysis inter_distance \
                                             --features_noisy ./extracted_features/extracted_features_develop_VG/ \
                                             --features_clean ./extracted_features/extracted_features_random_VG/ \
                                             --output_folder ./ \
                                             --split_file_noisy ./datasets/visual_genome/annotations/visual_genome_val.json \
                                             --split_file_clean ./datasets/random_visual_genome/annotations/random_visual_genome_val.json \
                                             --labels ./evaluation/objects_vocab_random.txt \
-                                            --classes all
+                                            --classes untouched
 
+srun python calc_features_comparisons.py    --analysis inter_distance \
+                                            --features_noisy ./extracted_features/extracted_features_develop_VG/ \
+                                            --features_clean ./extracted_features/extracted_features_random_VG/ \
+                                            --output_folder ./ \
+                                            --split_file_noisy ./datasets/visual_genome/annotations/visual_genome_val.json \
+                                            --split_file_clean ./datasets/random_visual_genome/annotations/random_visual_genome_val.json \
+                                            --labels ./evaluation/objects_vocab_random.txt \
+                                            --classes new
 
-# python plot_pred_bestclass_scores_kdeplot.py --file1 ./results/output_develop_postmapping/inference/instances_predictions.pth --file2 ./results/output_new_classes_v3/inference/instances_predictions.pth --output ./diff_new_predicted_scores_kde.pdf --inf_type score --classes all"
-# bash container.bash exec bu-drigoni-dkm 00 "python plot_freq_class_dataset.py --file ./analysis/cleaned_classes_frequency.json --compare ./analysis/random_classes_frequency.json --loglog"
-# python plot_pred_bestclass_scores_kdeplot.py --file1 ./results/output_develop_postmapping/inference/instances_predictions.pth --file2 ./results/output_new_classes_v3/inference/instances_predictions.pth --output ./diff_new_predicted_scores_kde.pdf --inf_type score --classes all
 
 # last default print
 echo ''
