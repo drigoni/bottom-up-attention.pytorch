@@ -10,3 +10,4 @@ MODEL:
       CONF_THRESH: 0.4
   RESNETS:
     DEPTH: 101
+POSTPROCESSING_LABELS: "evaluation/objects_vocab_random.txt"
