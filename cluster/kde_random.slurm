@@ -57,11 +57,26 @@ echo ''
 module load CUDA
 
 # todo
-srun python plot_pred_bestclass_scores_kdeplot.py   --file1 ./results/output_develop_postmapping/inference/instances_predictions.pth 
-                                                    --file2 ./results/output_develop_postprocessing_random/inference/instances_predictions.pth 
-                                                    --output ./diff_new_predicted_scores_kde.pdf 
-                                                    --inf_type score 
+srun python plot_pred_bestclass_scores_kdeplot.py   --file1 ./results/output_develop_postprocessing_random/inference/instances_predictions.pth \
+                                                    --file2 ./results/output_random/inference/instances_predictions.pth \
+                                                    --inf_type score \
+                                                    --labels ./evaluation/objects_vocab_random.txt \
+                                                    --output ./predicted_scores_kde_random_all.pdf \
                                                     --classes all
+
+srun python plot_pred_bestclass_scores_kdeplot.py   --file1 ./results/output_develop_postprocessing_random/inference/instances_predictions.pth \
+                                                    --file2 ./results/output_random/inference/instances_predictions.pth \
+                                                    --inf_type score \
+                                                    --labels ./evaluation/objects_vocab_random.txt \
+                                                    --output ./predicted_scores_kde_random_old.pdf \
+                                                    --classes old
+
+srun python plot_pred_bestclass_scores_kdeplot.py   --file1 ./results/output_develop_postprocessing_random/inference/instances_predictions.pth \
+                                                    --file2 ./results/output_random/inference/instances_predictions.pth \
+                                                    --inf_type score \
+                                                    --labels ./evaluation/objects_vocab_random.txt \
+                                                    --output ./predicted_scores_kde_random_new.pdf \
+                                                    --classes new
 
 
 # python plot_pred_bestclass_scores_kdeplot.py --file1 ./results/output_develop_postmapping/inference/instances_predictions.pth --file2 ./results/output_new_classes_v3/inference/instances_predictions.pth --output ./diff_new_predicted_scores_kde.pdf --inf_type score --classes all"

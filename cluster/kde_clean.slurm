@@ -57,21 +57,22 @@ echo ''
 module load CUDA
 
 # todo
-srun python plot_pred_bestclass_scores_kdeplot.py   --file1 ./results/output_develop_postmapping/inference/instances_predictions.pth \
+# srun python plot_pred_bestclass_scores_kdeplot.py   --file1 ./results/output_develop_postmapping/inference/instances_predictions.pth \ # different results, probably due tu results evaluated on valid set and not test set at that time
+srun python plot_pred_bestclass_scores_kdeplot.py   --file1 ./results/output_develop_postprocessing_clean/inference/instances_predictions.pth \
                                                     --file2 ./results/output_new_classes_v3/inference/instances_predictions.pth \
                                                     --inf_type score \
                                                     --labels ./evaluation/objects_vocab.txt \
                                                     --output ./predicted_scores_kde_clean_all.pdf \
                                                     --classes all
 
-srun python plot_pred_bestclass_scores_kdeplot.py   --file1 ./results/output_develop_postmapping/inference/instances_predictions.pth \
+srun python plot_pred_bestclass_scores_kdeplot.py   --file1 ./results/output_develop_postprocessing_clean/inference/instances_predictions.pth \
                                                     --file2 ./results/output_new_classes_v3/inference/instances_predictions.pth \
                                                     --inf_type score \
                                                     --labels ./evaluation/objects_vocab.txt \
                                                     --output ./predicted_scores_kde_clean_old.pdf \
                                                     --classes old
 
-srun python plot_pred_bestclass_scores_kdeplot.py   --file1 ./results/output_develop_postmapping/inference/instances_predictions.pth \
+srun python plot_pred_bestclass_scores_kdeplot.py   --file1 ./results/output_develop_postprocessing_clean/inference/instances_predictions.pth \
                                                     --file2 ./results/output_new_classes_v3/inference/instances_predictions.pth \
                                                     --inf_type score \
                                                     --labels ./evaluation/objects_vocab.txt \
