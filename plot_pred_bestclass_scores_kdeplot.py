@@ -109,12 +109,12 @@ def draw_plots_together(data1, data2, output, classes_type):
                 color='#1f77b4',
                 cut=0,
                 common_norm=False,
-                label='BU Original Mapped to Clean')
+                label='BUA Original Mapped to Clean')
     sns.kdeplot(data=data2,
                 color='#ff7f0e',
                 cut=0,
                 common_norm=False,
-                label='BU Cleaned')
+                label='BUA Cleaned')
     if str.lower(classes_type) == 'all':
         plt.title('All Categories', fontsize=22)   
     elif str.lower(classes_type) == 'old':
@@ -213,7 +213,7 @@ if __name__ == "__main__":
         map_fn_reverse[v].append(k)
     subset_indexes = [k for k, v in map_fn_reverse.items() if len(v) == 1]
     old_cls_idx = [k-1 for k in subset_indexes] # index starting from 0 e not 1
-    # cleaning according to evaluation of BU model
+    # cleaning according to evaluation of BUA model
 
     # output_data -> list[dict] where each dict has keys: ["image_id", "boxes", "labels", "scores"]
     if args.file1 is not None and args.file2 is not None:
@@ -231,12 +231,12 @@ if __name__ == "__main__":
         output_data = torch.load(args.file1)
         data = extract_data(output_data, old_cls_idx, args.classes)
         data = select_information(data, args.inf_type)
-        draw_plot(data, args.output, 'BU Original Mapped to Clean', '#1f77b4', args.classes)
+        draw_plot(data, args.output, 'BUA Original Mapped to Clean', '#1f77b4', args.classes)
     elif args.file1 is None and args.file2 is not None:
         # loading data points
         output_data = torch.load(args.file2)
         data = extract_data(output_data, old_cls_idx, args.classes)
         data = select_information(data, args.inf_type)
-        draw_plot(data, args.output, 'BU Cleaned', '#ff7f0e', args.classes)
+        draw_plot(data, args.output, 'BUA Cleaned', '#ff7f0e', args.classes)
     else:
         print("Command line parameter error.")

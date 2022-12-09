@@ -70,9 +70,7 @@ class VGEvaluator(DatasetEvaluator):
         self._classes = ['__background__']
         self._class_to_ind = {}
         self._class_to_ind[self._classes[0]] = 0
-        if 'cleaned' in cfg.DATASETS.TEST:
-            filte_to_open = 'evaluation/objects_vocab_cleaned.txt'
-        elif 'random' in cfg.DATASETS.TEST:
+        if 'random' in str(cfg.DATASETS.TEST):
             filte_to_open = 'evaluation/objects_vocab_random.txt'
         else:
             filte_to_open = 'evaluation/objects_vocab.txt'

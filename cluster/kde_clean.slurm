@@ -2,10 +2,10 @@
 ### Owner: Davide Rigoni
 
 ### ============ SLURM COMMANDS
-#SBATCH --job-name='random_kde'     # create a short name for your job
+#SBATCH --job-name='clean_kde'     # create a short name for your job
 #SBATCH --account=p200049                           
 #SBATCH --mail-user=davide.rigoni.2@phd.unipd.it
-#SBATCH --output=cluster/out/random_labels_kde.txt
+#SBATCH --output=cluster/out/clean_labels_kde.txt
 #SBATCH --partition=gpu
 #SBATCH --qos=short
 #SBATCH --mem=100GB				                    # total memory per node
@@ -57,16 +57,30 @@ echo ''
 module load CUDA
 
 # todo
-srun python plot_pred_bestclass_scores_kdeplot.py   --file1 ./results/output_develop_postmapping/inference/instances_predictions.pth 
-                                                    --file2 ./results/output_develop_postprocessing_random/inference/instances_predictions.pth 
-                                                    --output ./diff_new_predicted_scores_kde.pdf 
-                                                    --inf_type score 
+srun python plot_pred_bestclass_scores_kdeplot.py   --file1 ./results/output_develop_postmapping/inference/instances_predictions.pth \
+                                                    --file2 ./results/output_new_classes_v3/inference/instances_predictions.pth \
+                                                    --inf_type score \
+                                                    --labels ./evaluation/objects_vocab.txt \
+                                                    --output ./predicted_scores_kde_clean_all.pdf \
                                                     --classes all
+
+srun python plot_pred_bestclass_scores_kdeplot.py   --file1 ./results/output_develop_postmapping/inference/instances_predictions.pth \
+                                                    --file2 ./results/output_new_classes_v3/inference/instances_predictions.pth \
+                                                    --inf_type score \
+                                                    --labels ./evaluation/objects_vocab.txt \
+                                                    --output ./predicted_scores_kde_clean_old.pdf \
+                                                    --classes old
+
+srun python plot_pred_bestclass_scores_kdeplot.py   --file1 ./results/output_develop_postmapping/inference/instances_predictions.pth \
+                                                    --file2 ./results/output_new_classes_v3/inference/instances_predictions.pth \
+                                                    --inf_type score \
+                                                    --labels ./evaluation/objects_vocab.txt \
+                                                    --output ./predicted_scores_kde_clean_new.pdf \
+                                                    --classes new
 
 
 # python plot_pred_bestclass_scores_kdeplot.py --file1 ./results/output_develop_postmapping/inference/instances_predictions.pth --file2 ./results/output_new_classes_v3/inference/instances_predictions.pth --output ./diff_new_predicted_scores_kde.pdf --inf_type score --classes all"
-# bash container.bash exec bu-drigoni-dkm 00 "python plot_freq_class_dataset.py --file ./analysis/cleaned_classes_frequency.json --compare ./analysis/random_classes_frequency.json --loglog"
-# 
+# bash container.bash exec bu-drigoni-dkm 00 "python plot_freq_class_dataset.py --file ./analysis/cleaned_classes_frequency.json --compare ./analysis/clean_classes_frequency.json --loglog"
 
 # last default print
 echo ''
