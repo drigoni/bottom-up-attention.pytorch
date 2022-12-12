@@ -239,6 +239,7 @@ def knn_analysis_old(features, output_folder, type, n_neighbors=8):
 
 def knn_analysis(features, features2images, output_folder, model_type, ignore_points_from_same_image=False, micro_average=True):
     print("Start KNN analysis")
+    print("Note: are features from the same image ignored?", ignore_points_from_same_image)
     # group features by class, REMEMBER empty list when there are no bounding boxes extracted for some classes
     features_dict = {int(k): v for k, v in features.items()}    # index starting from 0
     count_features = {int(k): len(v) for k, v in features2images.items()}    # index starting from 0
@@ -287,7 +288,6 @@ def knn_analysis(features, features2images, output_folder, model_type, ignore_po
 
         # retrieve indexes images and filter them
         if ignore_points_from_same_image:
-            print("Note: features from the same image are ignored")
             neig_images = X_images[neig_indexes]
             neig_images_boolean = (neig_images != el_image)
             neig_available = neig_indexes[neig_images_boolean]    

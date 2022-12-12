@@ -228,6 +228,46 @@ def intra_class_by_cleaned_classes_analysis(features_per_class_noisy, features_p
         print('Saved file: {}'.format(output_file))
 
 
+def intra_class_by_noisy_classes_analysis(features_per_class_noisy, output_folder):
+    print("Intra class analysis")
+    clusters_noisy = {k: v for k, v in features_per_class_noisy.items()}    # index starting from 0
+
+    distances_noisy = dict()
+
+    for k in clusters_noisy.keys():
+        if len(clusters_noisy[k]) > 0:
+            feat_noisy = np.stack(clusters_noisy[k], axis=0)
+            distances_noisy[k] = euclidean_distances(feat_noisy, feat_noisy)
+            np.fill_diagonal(distances_noisy[k], 0)        # DIAGONAL VALUES TO 0, inplace operation
+        else: 
+            distances_noisy[k] = None
+    
+    results_noisy = dict()
+    for k in distances_noisy.keys():
+        if distances_noisy[k] is not None and len(distances_noisy[k]) > 1:  # 1 because if there is only one point, its distance  from itself is not interesting 
+            # remember distances_noisy[k] is a matrix of distances whose diagonal is set to 0
+            res_noisy = np.sum(distances_noisy[k], axis=1) / (len(distances_noisy[k])-1)    # [n, n] to [n]
+            res_noisy = float(np.mean(res_noisy))
+        else:
+            res_noisy = None
+        results_noisy[k] = res_noisy
+
+    # dump distances
+    output_file = "{}features_only_noisy_intra_class_distance.json".format(output_folder)
+
+    with open(output_file, 'w') as f:
+        json.dump(results_noisy, f, indent=2)
+        print('Saved file: {}'.format(output_file))
+    # averaging
+    tmp_values = [i for i in results_noisy.values() if i is not None]
+    tmp_mean = np.average(tmp_values)
+    tmp_std = math.sqrt(np.average((tmp_values-tmp_mean)**2))
+    # round 
+    tmp_mean = round(tmp_mean, 2)
+    tmp_std = round(tmp_std, 2)
+    print("Average intra distances of noisy classes. Mean: {} || STD: {} . ".format(tmp_mean, tmp_std ))
+
+
 def filter_features_by_class(all_data, map_fn_reverse, class_type, model_type):
     """
     This function filter the features according to the class_type used in the inter_distances calculations.
@@ -306,7 +346,7 @@ def filter_features_by_class(all_data, map_fn_reverse, class_type, model_type):
 #        print("Average inter distances {} classes. Mean: {} || STD: {} . ".format(name, tmp_mean, tmp_std ))
 
 
-def inter_class_analysis(features_per_class_noisy, features_per_class_clean, map_fn, output_folder, micro_average=True):
+def inter_class_analysis(features_per_class_noisy, features_per_class_clean, map_fn, output_folder, micro_average=False):
     print("Inter class analysis")
     clusters_clean = {k: np.mean(np.stack(v, axis=0), axis=0) if len(v)>0 else None 
                         for k, v in features_per_class_clean.items()}    # index starting from 0
@@ -342,7 +382,6 @@ def inter_class_analysis(features_per_class_noisy, features_per_class_clean, map
             res_noisy = None
         results_noisy[k] = res_noisy
 
-    # NOTE: always weigthed average
     results_clean = {k: v for k, v in results_clean.items() if v is not None}
     results_noisy = {k: v for k, v in results_noisy.items() if v is not None}
     for name, data in zip(['noisy', 'cleaned'], [results_noisy, results_clean]):
@@ -393,7 +432,7 @@ def parse_args():
     parser.add_argument('--analysis', dest='analysis',
             help='Analysis to perform.',
             default='inter_distance',
-            choices=['inter_distance', 'intra_distance'],
+            choices=['inter_distance', 'intra_distance', 'intra_distance_by_noisy'],
             type=str)
     args = parser.parse_args()
     return args
@@ -432,6 +471,8 @@ if __name__ == "__main__":
             inter_class_analysis(features_per_class_noisy, features_per_class_clean, map_fn, args.output_folder)
         elif args.analysis == 'intra_distance':
             intra_class_by_cleaned_classes_analysis(features_per_class_noisy, features_per_class_clean, map_fn, args.output_folder)
+        elif args.analysis == 'intra_distance_by_noisy':
+            intra_class_by_noisy_classes_analysis(features_per_class_noisy, args.output_folder)
     else:
         print("Folder not valid. ")
         exit(1)
