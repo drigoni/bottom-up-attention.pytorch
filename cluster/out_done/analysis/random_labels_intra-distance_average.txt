@@ -1,17 +1,17 @@
 
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX 
-Date:  Fri Dec 9 18:27:37 CET 2022
+Date:  Mon Dec 12 16:22:15 CET 2022
 Directory:  /home/users/u100142/project_directory/drigoni/bottom-up-attention.pytorch
-Nodelist:  mel2097
+Nodelist:  mel2001
 Number of nodes:  1
 Ntasks per node:  1
 NGPUs per node:  4
 CUDA_VISIBLE_DEVICES:  0,1,2,3
 TORCH_DEVICE_COUNT:  4
-SLURM_MASTER_PORT:  19979
-SLURM_MASTER_NODE:  mel2097
-SLURM_MASTER_ADDR:  mel2097
-SLURM_MASTER_URL:  tcp://mel2097:19979
+SLURM_MASTER_PORT:  10784
+SLURM_MASTER_NODE:  mel2001
+SLURM_MASTER_ADDR:  mel2001
+SLURM_MASTER_URL:  tcp://mel2001:10784
 --------------------------------------------- 
 MODEL_NUM_GPUS:  4
 MODEL_NUM_MACHINES:  1
@@ -19,7 +19,7 @@ MODEL_BATCH_SIZE:  20
 MODEL_MAX_ITER:  144000
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX 
 
-/var/spool/parastation/jobs/249979: line 57: module: command not found
+/var/spool/parastation/jobs/250784: line 57: module: command not found
 Loading cleaned Visual Genome classes: ./evaluation/objects_vocab.txt .
 Warning: label already present for 17:stop sign. Class stopsign ignored. 
 Warning: label already present for 19:microwave. Class microwave oven ignored. 
@@ -59,4 +59,4 @@ Average intra distances cleaned classes. Aggregation:merged || Mean: 47.54 || ST
 
 
 Job done.
-Date:  Fri Dec 9 18:27:48 CET 2022
+Date:  Mon Dec 12 16:22:56 CET 2022

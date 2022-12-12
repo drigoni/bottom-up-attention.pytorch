@@ -252,12 +252,7 @@ def intra_class_by_noisy_classes_analysis(features_per_class_noisy, output_folde
             res_noisy = None
         results_noisy[k] = res_noisy
 
-    # dump distances
-    output_file = "{}features_only_noisy_intra_class_distance.json".format(output_folder)
 
-    with open(output_file, 'w') as f:
-        json.dump(results_noisy, f, indent=2)
-        print('Saved file: {}'.format(output_file))
     # averaging
     tmp_values = [i for i in results_noisy.values() if i is not None]
     tmp_mean = np.average(tmp_values)
@@ -266,6 +261,11 @@ def intra_class_by_noisy_classes_analysis(features_per_class_noisy, output_folde
     tmp_mean = round(tmp_mean, 2)
     tmp_std = round(tmp_std, 2)
     print("Average intra distances of noisy classes. Mean: {} || STD: {} . ".format(tmp_mean, tmp_std ))
+    # dump distances
+    output_file = "{}features_only_noisy_intra_class_distance.json".format(output_folder)
+    with open(output_file, 'w') as f:
+        json.dump(results_noisy, f, indent=2)
+        print('Saved file: {}'.format(output_file))
 
 
 def filter_features_by_class(all_data, map_fn_reverse, class_type, model_type):

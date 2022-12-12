@@ -57,7 +57,7 @@ echo ''
 module load CUDA
 
 srun python calc_features_knn_comparisons.py    --analysis knn \
-                                                --features_noisy ./extracted_features/extracted_features_develop_VG/ \
+                                                --features_noisy ./extracted_features/extracted_features_develop_VG_th02/ \
                                                 --features_clean ./extracted_features/extracted_features_random_VG_th02/ \
                                                 --output_folder ./ \
                                                 --ignore \
