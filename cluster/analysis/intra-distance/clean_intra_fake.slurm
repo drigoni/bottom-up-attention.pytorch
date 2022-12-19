@@ -2,10 +2,10 @@
 ### Owner: Davide Rigoni
 
 ### ============ SLURM COMMANDS
-#SBATCH --job-name='random_labels_intra-distance_th02'     # create a short name for your job
+#SBATCH --job-name='clean_labels_intra-distance_fake'     # create a short name for your job
 #SBATCH --account=p200049                           
 #SBATCH --mail-user=davide.rigoni.2@phd.unipd.it
-#SBATCH --output=cluster/out/random_labels_intra-distance_th02.txt
+#SBATCH --output=cluster/out/clean_labels_intra-distance_fake.txt
 #SBATCH --partition=gpu
 #SBATCH --qos=short
 #SBATCH --mem=100GB				                    # total memory per node
@@ -56,13 +56,24 @@ echo ''
 
 module load CUDA
 
-srun python calc_features_comparisons.py    --analysis intra_distance \
-                                            --features_noisy ./extracted_features/extracted_features_develop_VG_th02/ \
-                                            --features_clean ./extracted_features/extracted_features_random_VG_th02/ \
+# thi calculate the intra distance just for noisy labels
+srun python calc_features_comparisons_fake.py    --analysis intra_distance \
+                                            --features_noisy ./extracted_features/extracted_features_develop_VG/ \
+                                            --features_clean ./extracted_features/extracted_features_new_classes_v3_VG/ \
                                             --output_folder ./ \
                                             --split_file_noisy ./datasets/visual_genome/annotations/visual_genome_val.json \
-                                            --split_file_clean ./datasets/random_visual_genome/annotations/random_visual_genome_val.json \
-                                            --labels ./evaluation/objects_vocab_random.txt \
+                                            --split_file_clean ./datasets/cleaned_visual_genome/annotations/cleaned_visual_genome_val.json \
+                                            --labels ./evaluation/objects_vocab.txt \
+                                            --classes all
+
+
+srun python calc_features_comparisons_fake.py    --analysis intra_distance_by_noisy \
+                                            --features_noisy ./extracted_features/extracted_features_develop_VG/ \
+                                            --features_clean ./extracted_features/extracted_features_new_classes_v3_VG/ \
+                                            --output_folder ./ \
+                                            --split_file_noisy ./datasets/visual_genome/annotations/visual_genome_val.json \
+                                            --split_file_clean ./datasets/cleaned_visual_genome/annotations/cleaned_visual_genome_val.json \
+                                            --labels ./evaluation/objects_vocab.txt \
                                             --classes all
 
 # last default print
