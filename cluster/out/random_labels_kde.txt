@@ -1,17 +1,17 @@
 
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX 
-Date:  Fri Dec 16 12:30:15 CET 2022
+Date:  Tue Dec 20 14:00:07 CET 2022
 Directory:  /home/users/u100142/project_directory/drigoni/bottom-up-attention.pytorch
-Nodelist:  mel2171
+Nodelist:  mel2101
 Number of nodes:  1
 Ntasks per node:  1
 NGPUs per node:  4
 CUDA_VISIBLE_DEVICES:  0,1,2,3
 TORCH_DEVICE_COUNT:  4
-SLURM_MASTER_PORT:  12343
-SLURM_MASTER_NODE:  mel2171
-SLURM_MASTER_ADDR:  mel2171
-SLURM_MASTER_URL:  tcp://mel2171:12343
+SLURM_MASTER_PORT:  13954
+SLURM_MASTER_NODE:  mel2101
+SLURM_MASTER_ADDR:  mel2101
+SLURM_MASTER_URL:  tcp://mel2101:13954
 --------------------------------------------- 
 MODEL_NUM_GPUS:  4
 MODEL_NUM_MACHINES:  1
@@ -19,7 +19,7 @@ MODEL_BATCH_SIZE:  20
 MODEL_MAX_ITER:  144000
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX 
 
-/var/spool/parastation/jobs/252343: line 57: module: command not found
+/var/spool/parastation/jobs/253954: line 57: module: command not found
 /home/users/u100142/miniconda3/envs/bu/lib/python3.9/site-packages/numpy/core/fromnumeric.py:3440: RuntimeWarning: Mean of empty slice.
   return _methods._mean(a, axis=axis, dtype=dtype,
 /home/users/u100142/miniconda3/envs/bu/lib/python3.9/site-packages/numpy/core/_methods.py:189: RuntimeWarning: invalid value encountered in double_scalars
@@ -116,4 +116,4 @@ Saved plot: ./predicted_scores_kde_random_new.pdf
 
 
 Job done.
-Date:  Fri Dec 16 12:31:56 CET 2022
+Date:  Tue Dec 20 14:01:42 CET 2022

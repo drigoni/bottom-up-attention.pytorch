@@ -109,12 +109,12 @@ def draw_plots_together(data1, data2, output, classes_type):
                 color='#1f77b4', # 1f77b4
                 cut=0,
                 common_norm=False,
-                label='BUA Original to Random')
+                label="BUA Original\u27F6Clean-878")
     sns.kdeplot(data=data2,
-                color='#7f4f24',    #ff7f0e  #7f4f24 brown
+                color='#ff7f0e',    #ff7f0e  #7f4f24 brown
                 cut=0,
                 common_norm=False,
-                label='BUA Random')
+                label='BUA Clean')
     if str.lower(classes_type) == 'all':
         plt.title('All Categories', fontsize=22)   
     elif str.lower(classes_type) == 'old':
