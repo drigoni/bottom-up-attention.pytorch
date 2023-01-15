@@ -1,0 +1,88 @@
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX 
+Date:  Tue Dec 13 15:01:14 CET 2022
+Directory:  /home/users/u100142/project_directory/drigoni/bottom-up-attention.pytorch
+Nodelist:  mel2040
+Number of nodes:  1
+Ntasks per node:  1
+NGPUs per node:  4
+CUDA_VISIBLE_DEVICES:  0,1,2,3
+TORCH_DEVICE_COUNT:  4
+SLURM_MASTER_PORT:  11330
+SLURM_MASTER_NODE:  mel2040
+SLURM_MASTER_ADDR:  mel2040
+SLURM_MASTER_URL:  tcp://mel2040:11330
+--------------------------------------------- 
+MODEL_NUM_GPUS:  4
+MODEL_NUM_MACHINES:  1
+MODEL_BATCH_SIZE:  20
+MODEL_MAX_ITER:  144000
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX 
+
+/var/spool/parastation/jobs/251330: line 57: module: command not found
+Loading cleaned Visual Genome classes: ./evaluation/objects_vocab.txt .
+Warning: label already present for 17:stop sign. Class stopsign ignored. 
+Warning: label already present for 19:microwave. Class microwave oven ignored. 
+Warning: label already present for 27:refrigerator. Class fridge ignored. 
+Warning: label already present for 44:television. Class tv ignored. 
+Warning: label already present for 1404:tshirt. Class t shirt ignored. 
+Warning: label already present for 1404:tshirt. Class t-shirt ignored. 
+Warning: label already present for 60:racket. Class racquet ignored. 
+Warning: label already present for 66:headboard. Class head board ignored. 
+Warning: label already present for 69:tennis racket. Class tennis racquet ignored. 
+Warning: label already present for 87:skateboard. Class skate board ignored. 
+Warning: label already present for 1321:hot dogs. Class hotdogs ignored. 
+Warning: label already present for 135:hot dog. Class hotdog ignored. 
+Warning: label already present for 136:surfboard. Class surf board ignored. 
+Warning: label already present for 59:sailboat. Class sail boat ignored. 
+Warning: label already present for 168:fire hydrant. Class hydrant ignored. 
+Warning: label already present for 221:suitcase. Class suit case ignored. 
+Warning: label already present for 375:donut. Class doughnut ignored. 
+Warning: label already present for 628:donuts. Class doughnuts ignored. 
+Warning: label already present for 398:sidewalk. Class side walk ignored. 
+Warning: label already present for 400:stove top. Class stovetop ignored. 
+Warning: label already present for 561:nightstand. Class night stand ignored. 
+Warning: label already present for 695:lamp post. Class lamppost ignored. 
+Warning: label already present for 811:fire truck. Class firetruck ignored. 
+Warning: label already present for 1134:tail light. Class taillight ignored. 
+Warning: label already present for 1526:streetlight. Class street light ignored. 
+Loading all data.
+Start calculation
+Intra class analysis
+Saved file: ./features_cleaned_intra_class_distance.json
+Saved file: ./features_noisy_intra_class_distance.json
+Loading cleaned Visual Genome classes: ./evaluation/objects_vocab.txt .
+Warning: label already present for 17:stop sign. Class stopsign ignored. 
+Warning: label already present for 19:microwave. Class microwave oven ignored. 
+Warning: label already present for 27:refrigerator. Class fridge ignored. 
+Warning: label already present for 44:television. Class tv ignored. 
+Warning: label already present for 1404:tshirt. Class t shirt ignored. 
+Warning: label already present for 1404:tshirt. Class t-shirt ignored. 
+Warning: label already present for 60:racket. Class racquet ignored. 
+Warning: label already present for 66:headboard. Class head board ignored. 
+Warning: label already present for 69:tennis racket. Class tennis racquet ignored. 
+Warning: label already present for 87:skateboard. Class skate board ignored. 
+Warning: label already present for 1321:hot dogs. Class hotdogs ignored. 
+Warning: label already present for 135:hot dog. Class hotdog ignored. 
+Warning: label already present for 136:surfboard. Class surf board ignored. 
+Warning: label already present for 59:sailboat. Class sail boat ignored. 
+Warning: label already present for 168:fire hydrant. Class hydrant ignored. 
+Warning: label already present for 221:suitcase. Class suit case ignored. 
+Warning: label already present for 375:donut. Class doughnut ignored. 
+Warning: label already present for 628:donuts. Class doughnuts ignored. 
+Warning: label already present for 398:sidewalk. Class side walk ignored. 
+Warning: label already present for 400:stove top. Class stovetop ignored. 
+Warning: label already present for 561:nightstand. Class night stand ignored. 
+Warning: label already present for 695:lamp post. Class lamppost ignored. 
+Warning: label already present for 811:fire truck. Class firetruck ignored. 
+Warning: label already present for 1134:tail light. Class taillight ignored. 
+Warning: label already present for 1526:streetlight. Class street light ignored. 
+Loading all data.
+Start calculation
+Intra class analysis
+Average intra distances of noisy classes. Mean: 0.0 || STD: 0.0 . 
+Saved file: ./features_only_noisy_intra_class_distance.json
+
+
+Job done.
+Date:  Tue Dec 13 15:01:37 CET 2022
