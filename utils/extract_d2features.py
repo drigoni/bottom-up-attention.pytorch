@@ -12,6 +12,7 @@ import torch
 # import tqdm
 import cv2
 import numpy as np
+import glob
 
 sys.path.append('detectron2')
 
@@ -325,7 +326,7 @@ def extract_feat(split_idx, img_list, cfg, args, actor: ActorHandle):
         #     actor.update.remote(1)
         #     continue
         image_id = im_file.split('.')[0] # xxx.jpg
-        dump_folder = os.path.join(args.output_dir, str(image_id) + ".npz")
+        dump_folder = os.path.join(args.output_dir, str(image_id).split('/')[-1] + ".npz")
         if os.path.exists(os.path.join(args.output_dir, im_file.split('.')[0]+'.npz')):
             actor.update.remote(1)
             continue
@@ -455,9 +456,16 @@ def extract_feat_d2_start(args,cfg):
     CONF_THRESH = cfg.MODEL.BUA.EXTRACTOR.CONF_THRESH
     
     # Extract features.
-    imglist = os.listdir(args.image_dir)
+    if args.image_folder_recursive:
+        print("NOTE: Recursive searching for .jpg images for REFERIT!.")
+        # for path in glob(args.image_dir + '**/*.jpg', recursive=True):
+            # print(path)
+        imglist = list(['/'.join(i.split('/')[-3:]) for i in glob(args.image_dir + '*/images/*.jpg', recursive=True)])
+    else:
+        imglist = os.listdir(args.image_dir)
+    print(imglist)
     num_images = len(imglist)
-    print('Number of images: {}.'.format(num_images))
+    print('Number of images: {}.'.format(num_images), "Number of element set:", len(set(imglist)))
 
     if args.num_cpus != 0:
         ray.init(num_cpus=args.num_cpus)

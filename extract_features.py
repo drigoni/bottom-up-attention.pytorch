@@ -125,6 +125,7 @@ def main():
                         help='directory with bbox',
                         default="bbox")
     parser.add_argument("--fastmode", action="store_true", help="whether to use multi cpus to extract faster.",)
+    parser.add_argument("--image_folder_recursive", action="store_true", help="recursively search for images in the dimage-dir folder.",)
 
     parser.add_argument(
         "--resume",

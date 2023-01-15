@@ -44,6 +44,7 @@ elif [[ $MODE == "exec" ]]; then
     -v ${DATASETS_PATH}/VisualGenome/images/:${DOCKER_FOLDER}/datasets/visual_genome/images \
     -v ${DATASETS_PATH}/VisualGenome/annotations/:${DOCKER_FOLDER}/datasets/visual_genome/annotations \
     -v ${DATASETS_PATH}/flickr30k/:${DOCKER_FOLDER}/datasets/flickr30k \
+    -v ${DATASETS_PATH}/refer/:${DOCKER_FOLDER}/datasets/refer \
     $VERSION \
     $CMD
 elif [[ $MODE == "interactive" ]]; then
