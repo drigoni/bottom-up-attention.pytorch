@@ -359,6 +359,37 @@ def inter_class_analysis(features_per_class_noisy, features_per_class_clean, map
         tmp_std = round(tmp_std, 2)
         print("Average inter distances {} classes. Mean: {} || STD: {} . ".format(name, tmp_mean, tmp_std ))
 
+
+def build_fake_data(type='noisy'):
+    if type=='noisy':
+        data_by_class = {i: [] for i in range(0, 1600)}
+        # for i in data_by_class.keys():
+        #     data_by_class[i].append([1]*5 + [0]*2043)
+        #     data_by_class[i].append([0]*5 + [1]*2043)
+        data_by_class[0].append([1]*5 + [0]*2043)
+        data_by_class[0].append([1]*5 + [0]*2043)
+        data_by_class[0].append([1]*5 + [0]*2043)
+        data_by_class[0].append([1]*5 + [0]*2043)
+        data_by_class[323].append([0]*2043 + [1]*5)
+        data_by_class[323].append([0]*2043 + [1]*5)
+        data_by_class[323].append([0]*2043 + [1]*5)
+        data_by_class[323].append([0]*2043 + [1]*5)
+    else:
+        data_by_class = {i: [] for i in range(0, 878)}
+        # for i in data_by_class.keys():
+        #     data_by_class[i].append([1]*2043 + [0]*5)
+        #     data_by_class[i].append([0]*2043 + [1]*5)
+        data_by_class[0].append([0]*5 + [1]*2043)
+        data_by_class[0].append([0]*5 + [1]*2043)
+        data_by_class[0].append([0]*5 + [1]*2043)
+        data_by_class[0].append([0]*5 + [1]*2043)
+        data_by_class[323].append([0]*2043 + [1]*5)
+        data_by_class[323].append([0]*2043 + [1]*5)
+        data_by_class[323].append([0]*2043 + [1]*5)
+        data_by_class[323].append([0]*2043 + [1]*5)
+    return data_by_class 
+
+
 def parse_args():
     """
     Parse input arguments
@@ -398,22 +429,25 @@ if __name__ == "__main__":
         map_fn_reverse[v].append(k)
 
     # get images names to use for loading the extracted features
-    with open(args.split_file_noisy, 'r') as f:
-        dataset = json.load(f)
-    images_name = [i['file_name'][:-4] for i in dataset['images']]
-    categories_noisy = {int(i['id']): i['name']  for i in dataset['categories']}
-    with open(args.split_file_clean, 'r') as f:
-        dataset = json.load(f)
-    images_name = [i['file_name'][:-4] for i in dataset['images']]
-    categories_clean = {int(i['id']): i['name']  for i in dataset['categories']}
+    # with open(args.split_file_noisy, 'r') as f:
+    #     dataset = json.load(f)
+    # images_name = [i['file_name'][:-4] for i in dataset['images']]
+    # categories_noisy = {int(i['id']): i['name']  for i in dataset['categories']}
+    # with open(args.split_file_clean, 'r') as f:
+    #     dataset = json.load(f)
+    # images_name = [i['file_name'][:-4] for i in dataset['images']]
+    # categories_clean = {int(i['id']): i['name']  for i in dataset['categories']}
 
     # check if the folder exists
     if os.path.exists(args.features_noisy) and os.path.exists(args.features_clean):
         print('Loading all data.')
-        all_data_noisy = load_data(args.features_noisy, "noisy", images_name)
-        all_data_clean = load_data(args.features_clean, "cleaned", images_name)
-        features_per_class_noisy = prepare_features(all_data_noisy, categories_noisy)
-        features_per_class_clean = prepare_features(all_data_clean, categories_clean)
+        # all_data_noisy = load_data(args.features_noisy, "noisy", images_name)
+        # all_data_clean = load_data(args.features_clean, "cleaned", images_name)
+        # features_per_class_noisy = prepare_features(all_data_noisy, categories_noisy)
+        # features_per_class_clean = prepare_features(all_data_clean, categories_clean)
+        features_per_class_noisy = build_fake_data('noisy')
+        features_per_class_clean = build_fake_data('clean')
+
         print("Start calculation")
         if args.analysis == 'inter_distance':
             # filtering by class type

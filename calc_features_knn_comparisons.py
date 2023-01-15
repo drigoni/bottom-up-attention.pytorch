@@ -312,6 +312,7 @@ def knn_analysis(features, features2images, output_folder, model_type, ignore_po
         untouched_cls_idx = [k-1  for k, v in map_fn_reverse.items() if len(v) == 1]
     # assert len(untouched_cls_idx) == 515 # number of untouched classes
 
+    
     # weighted average
     for value, res_storage in zip([1, 5, 10, 100], [results_1, results_5, results_10, results_100]):
         for class_type in ['all', 'untouched', 'merged']:
