@@ -28,7 +28,7 @@ from detectron2.evaluation import COCOEvaluator, verify_results
 from detectron2.structures import Instances
 
 # from utils.utils import mkdir, save_features
-# from utils.extract_utils2 import get_image_blob, save_bbox, save_roi_features_by_bbox, save_roi_features
+from utils.extract_utils import save_roi_features_detectron2
 from utils.progress_bar import ProgressBar
 from bua.d2 import add_attribute_config
 from bua import add_config
@@ -195,18 +195,23 @@ def model_inference(model, batched_inputs, extract_mode, dump_folder, image_h, i
         print("proposals")
         proposals = [x["proposals"].to(model.device) for x in batched_inputs]
     _, pooled_features, _ = model.roi_heads.get_roi_features(features, proposals)  # fc7 feats
-    predictions = model.roi_heads.box_predictor(pooled_features)
+    predictions = model.roi_heads.box_predictor(pooled_features) # gets: (scores, box_regression)
     cls_lables = torch.argmax(predictions[0], dim=1)
     
     cls_probs = F.softmax(predictions[0], dim=-1)
     cls_probs = cls_probs[:, :-1]  # background is last
     if extract_mode != 3:
-        predictions, r_indices = model.roi_heads.box_predictor.inference(predictions, proposals)
+        predictions, r_indices = model.roi_heads.box_predictor.inference(predictions, proposals) # with nms by class
+        # predictions should be ordered by bounding boxes scores. See keep in: https://github.com/facebookresearch/detectron2/blob/95a87b8dd359014d1ff81fe14f539dd279bcbe4b/detectron2/modeling/roi_heads/fast_rcnn.py#L118
+        # However, for each box, it is not know the max conf value, but just the order.
+        # TODO: to complete
 
         if attribute_on:
             attr_scores = model.roi_heads.forward_attribute_score(pooled_features, cls_lables)
             attr_probs = F.softmax(attr_scores, dim=-1)
             attr_probs = attr_probs[r_indices]
+        
+
 
         # postprocess
         height = images[0].shape[1]
@@ -220,7 +225,7 @@ def model_inference(model, batched_inputs, extract_mode, dump_folder, image_h, i
         pooled_features = pooled_features[r_indices]
 
         if extract_mode == 1: # roi_feats
-
+            # we should select here the minimun number of boxes
             assert (
                 bboxes.size(0)
                 == classes.size(0)

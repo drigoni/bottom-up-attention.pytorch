@@ -30,6 +30,7 @@ from bua.caffe.modeling.box_regression import BUABoxes
 
 import ray
 from ray.actor import ActorHandle
+from glob import glob
 
 """
 add ray to generate_npz
@@ -222,9 +223,16 @@ def extract_feat_faster_start(args,cfg):
     CONF_THRESH = cfg.MODEL.BUA.EXTRACTOR.CONF_THRESH
 
     # Extract features.
-    imglist = os.listdir(args.image_dir)
+    if args.image_folder_recursive:
+        print("NOTE: Recursive searching for .jpg images for REFERIT!.")
+        # for path in glob(args.image_dir + '**/*.jpg', recursive=True):
+            # print(path)
+        imglist = list(['/'.join(i.split('/')[-3:]) for i in glob(args.image_dir + '*/images/*.jpg', recursive=True)])
+    else:
+        imglist = os.listdir(args.image_dir)
+    print(imglist)
     num_images = len(imglist)
-    print('Number of images: {}.'.format(num_images))
+    print('Number of images: {}.'.format(num_images), "Number of element set:", len(set(imglist)))
 
     if args.num_cpus != 0:
         ray.init(num_cpus=args.num_cpus)

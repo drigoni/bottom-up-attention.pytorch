@@ -62,9 +62,14 @@ def set_min_max_boxes(min_max_boxes, mode):
             if min_boxes == 100 & max_boxes == 100:
                 cmd = ['MODEL.BUA.EXTRACTOR.MIN_BOXES', min_boxes, 
                         'MODEL.BUA.EXTRACTOR.MAX_BOXES', max_boxes,
-                        'MODEL.ROI_HEADS.SCORE_THRESH_TEST', 0.0,
-                        'MODEL.ROI_HEADS.NMS_THRESH_TEST', 0.3 ]
-                return cmd
+                        'MODEL.ROI_HEADS.SCORE_THRESH_TEST', 0.0,   # default -1 in caffe'
+                        'MODEL.ROI_HEADS.NMS_THRESH_TEST', 0.3 ]    # default 0.3 in caffe
+            #     return cmd
+            # elif min_boxes == 1 & max_boxes == 100:
+            #     cmd = ['MODEL.BUA.EXTRACTOR.MIN_BOXES', min_boxes, 
+            #             'MODEL.BUA.EXTRACTOR.MAX_BOXES', max_boxes,
+            #             'MODEL.ROI_HEADS.SCORE_THRESH_TEST', 0.05,  # default 0.05 values
+            #             'MODEL.ROI_HEADS.NMS_THRESH_TEST', 0.3 ]    # default 0.5 values
         else:
             raise Exception("detection mode not supported: {}".format(mode))
     except:
