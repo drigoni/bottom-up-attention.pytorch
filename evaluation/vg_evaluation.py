@@ -69,7 +69,9 @@ class VGEvaluator(DatasetEvaluator):
         self._classes = ['__background__']
         self._class_to_ind = {}
         self._class_to_ind[self._classes[0]] = 0
-        with open(os.path.join('evaluation/cleaned_objects_vocab.txt')) as f:
+        filte_to_open = cfg.POSTPROCESSING_LABELS
+        print("Evaluation considering classes: ", filte_to_open)
+        with open(os.path.join(filte_to_open)) as f:
             count = 1
             for object in f.readlines():
                 names = [n.lower().strip() for n in object.split(',')]
@@ -97,12 +99,12 @@ class VGEvaluator(DatasetEvaluator):
                     self._attribute_to_ind[n] = count
                 count += 1
 
-        self.cat_map, self.cat_new_labels, self.cat_old_labels = self._get_categories_mapping()
+        self.cat_map, self.cat_new_labels, self.cat_old_labels = self._get_categories_mapping(filte_to_open)
         self.roidb, self.image_index = self.gt_roidb(self._coco_api)
         assert len(self._classes)-1 == len(self.cat_new_labels) # self._classes has __background__ class
 
 
-    def _get_categories_mapping(self, labels_file='evaluation/cleaned_objects_vocab.txt'):
+    def _get_categories_mapping(self, labels_file):
         '''
         This function creates the mapping function from the old classes to the new ones.
         :param labels_file: new classes.

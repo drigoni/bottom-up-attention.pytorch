@@ -14,7 +14,7 @@ MODEL:
     SMOOTH_L1_BETA: 1.
 DATASETS:
   TRAIN: ("visual_genome_train",)
-  TEST: ("visual_genome_val",)
+  TEST: ("visual_genome_test",)
 SOLVER:
   IMS_PER_BATCH: 8
   BASE_LR: 0.01
@@ -29,4 +29,5 @@ INPUT:
   MAX_SIZE_TRAIN: 1000
   MIN_SIZE_TEST: 600
   MAX_SIZE_TEST: 1000
+POSTPROCESSING_LABELS: "evaluation/objects_vocab_cleaned.txt"
 VERSION: 2

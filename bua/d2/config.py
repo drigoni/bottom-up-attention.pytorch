@@ -28,6 +28,7 @@ def add_attribute_config(cfg):
     cfg.MODEL.ROI_ATTRIBUTE_HEAD.LOSS_WEIGHT = 0.2
     # Number of classes for attributes
     cfg.MODEL.ROI_ATTRIBUTE_HEAD.NUM_CLASSES = 400
+    cfg.POSTPROCESSING_LABELS = 'evaluation/objects_vocab_cleaned.txt'
 
     """
     Add config for box regression loss adjustment.
