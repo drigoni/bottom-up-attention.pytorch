@@ -8,8 +8,23 @@ Follow the list of classes:
 - Random classes: [./evaluation/objects_vocab_random.txt](./evaluation/objects_vocab_random.txt) 
 
 
-# Dependencies, Structure, Datasets, Usage
+# Dependencies, Structure, Usage
 For more details on repository structure, dependencies, datasets and usage, refer to the original [README](./README_bu.md)
+
+
+# Datasets
+To download the Visual Genome dataset, follow the instruction presented here: [README](./README_bu.md) \
+To generate the new datasets:
+```
+python make_dataset_cleanv3.py --labels ./evaluation/objects_vocab.txt
+python make_dataset_random.py --labels ./evaluation/objects_vocab_random.txt
+```
+or, download them from [here](https://drive.google.com/file/d/1tYn6TlOyMb2WXEek6xL-Fig433xZWhIZ/view?usp=share_link). 
+
+Use this command to generate the list of random labels:
+```
+python make_categories_random.py    --labels ./evaluation/objects_vocab.txt --output_folder ./
+```
 
 # Repository Branches
 This repository has the following branches:
