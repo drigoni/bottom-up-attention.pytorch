@@ -1,5 +1,5 @@
 # Cleaned Classes for Visual Genome
-This repository contains the code used to generate the results reported in the paper: [TODO]() \
+This repository contains the code used to generate the results reported in the paper: [Cleaner Categories Improve Object Detection and Visual-Textual Grounding](https://elliottd.github.io/papers/scia2023.pdf). \
 Most of our code is based on [bottom-up-attention.pytorch](https://github.com/MILVLG/bottom-up-attention.pytorch). Thanks! \
 Follow the list of classes:
 
