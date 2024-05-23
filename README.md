@@ -1,6 +1,19 @@
 # Cleaned Classes for Visual Genome
-This repository contains the code used to generate the results reported in the paper: [Cleaner Categories Improve Object Detection and Visual-Textual Grounding](https://elliottd.github.io/papers/scia2023.pdf). \
-Most of our code is based on [bottom-up-attention.pytorch](https://github.com/MILVLG/bottom-up-attention.pytorch). Thanks! \
+This repository contains the code used to generate the results reported in the paper: [Cleaner Categories Improve Object Detection and Visual-Textual Grounding](https://link.springer.com/chapter/10.1007/978-3-031-31435-3_28)  [[Preprint](https://elliottd.github.io/papers/scia2023.pdf)]. \
+Most of our code is based on [bottom-up-attention.pytorch](https://github.com/MILVLG/bottom-up-attention.pytorch). Thanks! 
+
+```
+@inproceedings{rigoni2023cleaner,
+  title={Cleaner categories improve object detection and visual-textual grounding},
+  author={Rigoni, Davide and Elliott, Desmond and Frank, Stella},
+  booktitle={Scandinavian Conference on Image Analysis},
+  pages={412--442},
+  year={2023},
+  organization={Springer}
+}
+```
+
+
 Follow the list of classes:
 
 - Cleaned classes: [./evaluation/objects_vocab.txt](./evaluation/objects_vocab.txt) 
